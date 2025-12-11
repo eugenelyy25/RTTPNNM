@@ -1,0 +1,9 @@
+pandas
+requests
+opencv-python
+numpy
+ultralytics
+googlemaps
+openmeteo-requests
+requests-cache
+retry-requests

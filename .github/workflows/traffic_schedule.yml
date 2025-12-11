@@ -1,0 +1,43 @@
+name: Traffic & Weather Data Collection
+
+on:
+  schedule:
+    # Runs every 30 minutes from 00:00 UTC (8am KL) to 13:30 UTC (9:30pm KL)
+    - cron: '0,30 0-13 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  collect-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Important: Allows the script to commit changes (append CSV)
+      
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          # Pre-download YOLO model to avoid download during script execution
+          pip install ultralytics
+          python -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
+
+      - name: Run Data Collection Script
+        env:
+          GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
+        run: python traffic_collector.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add traffic_data.csv
+          git commit -m "Auto-update traffic data [skip ci]" || echo "No changes to commit"
+          git push
