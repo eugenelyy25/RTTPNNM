@@ -9,12 +9,21 @@ on:
 jobs:
   collect-data:
     runs-on: ubuntu-latest
+    timeout-minutes: 15 # FIX: Kills the job if it hangs for more than 15 mins
     permissions:
       contents: write # Important: Allows the script to commit changes (append CSV)
       
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      # FIX: Free up ~4GB space by removing unused pre-installed software
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          echo "Disk space freed."
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -24,15 +33,27 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install -r requirements.txt
-          # Pre-download YOLO model to avoid download during script execution
+          python -m pip install --upgrade pip
+          
+          # FIX: Install CPU-only PyTorch explicitly FIRST. 
+          # This prevents downloading the massive 4GB GPU version which fills the disk.
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          
+          # Install other requirements (OpenCV, Pandas, etc.)
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          
+          # Install Ultralytics (it will detect the existing CPU torch and skip the huge download)
           pip install ultralytics
+          
+          # Pre-download YOLO model to avoid download during script execution
           python -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
 
       - name: Run Data Collection Script
         env:
           GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
-        run: python traffic_collector.py
+        # FIX: Added '-u' to force unbuffered output. 
+        # This lets you see logs immediately in real-time, rather than waiting for the script to finish.
+        run: python -u traffic_collector.py
 
       - name: Commit and Push Changes
         run: |
