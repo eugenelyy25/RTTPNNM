@@ -9,15 +9,15 @@ on:
 jobs:
   collect-data:
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # FIX: Kills the job if it hangs for more than 15 mins
+    timeout-minutes: 15 # Safety: Kills job if it freezes
     permissions:
-      contents: write # Important: Allows the script to commit changes (append CSV)
+      contents: write
       
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # FIX: Free up ~4GB space by removing unused pre-installed software
+      # CRITICAL FIX: Frees ~4GB space to prevent "No space left on device" crash
       - name: Free Disk Space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -35,24 +35,22 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           
-          # FIX: Install CPU-only PyTorch explicitly FIRST. 
-          # This prevents downloading the massive 4GB GPU version which fills the disk.
+          # CRITICAL FIX: Install CPU-only PyTorch (saves 3GB space)
           pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
           
-          # Install other requirements (OpenCV, Pandas, etc.)
+          # Install other requirements
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           
-          # Install Ultralytics (it will detect the existing CPU torch and skip the huge download)
+          # Install Ultralytics (uses existing CPU torch)
           pip install ultralytics
           
-          # Pre-download YOLO model to avoid download during script execution
+          # Pre-download YOLO model
           python -c "from ultralytics import YOLO; YOLO('yolo11n.pt')"
 
       - name: Run Data Collection Script
         env:
           GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
-        # FIX: Added '-u' to force unbuffered output. 
-        # This lets you see logs immediately in real-time, rather than waiting for the script to finish.
+        # CRITICAL FIX: '-u' allows you to see logs in real-time
         run: python -u traffic_collector.py
 
       - name: Commit and Push Changes
