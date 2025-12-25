@@ -7,14 +7,14 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚦</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare. com/ajax/libs/Chart. js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     
     <style>
-        : root {
-            --cyan-pane:  #00FFFF;
+        :root {
+            --cyan-pane: #00FFFF;
             --btn-yellow: #FFFF00;
             --btn-lime: #00FF00;
         }
@@ -35,18 +35,26 @@
             border: 1px solid #000;
             transition: all 0.1s;
         }
-        . pill-btn:hover { transform: scale(1.02); }
-        .pill-btn: active { transform: scale(0.95); }
+        .pill-btn:hover { transform: scale(1.02); }
+        .pill-btn:active { transform: scale(0.95); }
         .pill-yellow { background-color: var(--btn-yellow); color: black; }
         .pill-lime { background-color: var(--btn-lime); color: black; }
         .pill-active { border: 2px solid #1d4ed8; box-shadow: inset 0 0 4px rgba(0,0,0,0.2); }
 
-        /* STATIC GRID LAYOUT */
+        /* IMPROVED RESPONSIVE GRID LAYOUT */
         .graph-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1rem;
             padding: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .graph-container {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+                padding: 0.5rem;
+            }
         }
 
         .graph-card {
@@ -55,9 +63,16 @@
             border: 1px solid #cbd5e1;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             padding: 10px;
-            height: 180px; 
+            height: 220px; 
             display: flex;
             flex-direction: column;
+        }
+
+        @media (max-width: 640px) {
+            .graph-card {
+                height: 250px;
+                padding: 12px;
+            }
         }
 
         .chart-title { 
@@ -71,14 +86,30 @@
             text-align: center; 
         }
 
+        @media (max-width: 640px) {
+            .chart-title {
+                font-size: 0.85rem;
+                margin-bottom: 8px;
+                white-space: normal;
+                line-height: 1.2;
+            }
+        }
+
         .chart-wrapper {
             flex-grow: 1;
             position: relative;
             width: 100%;
-            height:  100%;
+            height: 100%;
+            min-height: 150px;
         }
 
-        /* Weather Widget - FORCED VISIBILITY */
+        @media (max-width: 640px) {
+            .chart-wrapper {
+                min-height: 180px;
+            }
+        }
+
+        /* Weather Widget */
         .weather-widget {
             border: 2px solid white;
             border-radius: 6px;
@@ -89,13 +120,24 @@
             display: block; 
         }
 
+        @media (max-width: 640px) {
+            .weather-widget {
+                width: 140px;
+                height: 60px;
+            }
+            .weather-widget iframe {
+                width: 140px !important;
+                height: 60px !important;
+            }
+        }
+
         #map { height: 100%; width: 100%; border-radius: 8px; z-index: 1; min-height: 500px; }
         
         /* Custom Leaflet Popup for CCTV */
-        . leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; }
-        .leaflet-popup-content { margin: 10px; width: 300px ! important; }
+        .leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; }
+        .leaflet-popup-content { margin: 10px; width: 300px !important; }
 
-        . loader { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 2s linear infinite; display: none; margin: 10px auto;}
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 2s linear infinite; display: none; margin: 10px auto;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -109,7 +151,6 @@
                 <button onclick="switchTab('cctv')" id="btn-cctv" class="pill-btn pill-lime">CCTV</button>
                 <button onclick="switchTab('model')" id="btn-model" class="pill-btn pill-yellow">Model</button>
             </div>
-            
             <div id="date-buttons" class="hidden xl:flex gap-1 ml-4">
                 <span class="text-xs text-gray-500 self-center">Loading Data...</span>
             </div>
@@ -117,15 +158,11 @@
         
         <div class="flex items-center gap-3">
             <div class="text-right text-xs font-mono leading-tight hidden lg:block bg-white/50 p-1 rounded">
-                <div class="text-gray-500">Last Refresh: </div>
+                <div class="text-gray-500">Last Refresh:</div>
                 <div id="refresh-time" class="font-bold text-gray-800">--/--/----, --:--:-- PM</div>
             </div>
             <div class="weather-widget relative shadow-md">
-                <iframe 
-                    width="180" height="80" 
-                    src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=180&height=80&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" 
-                    frameborder="0" style="pointer-events: none;">
-                </iframe>
+                <iframe width="180" height="80" src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=180&height=80&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" frameborder="0" style="pointer-events:none;"></iframe>
             </div>
         </div>
     </header>
@@ -133,11 +170,8 @@
     <div id="date-buttons-mobile" class="xl:hidden bg-gray-100 p-2 flex overflow-x-auto gap-2 shrink-0 border-b border-gray-200"></div>
 
     <main class="flex-grow overflow-y-auto bg-gray-50 relative">
-        
         <div id="tab-chart" class="block pb-10">
-            <div id="graphs-wrapper" class="graph-container">
-                <p class="text-center w-full mt-10 text-gray-400 animate-pulse">Loading Traffic Data...</p>
-            </div>
+            <div id="graphs-wrapper" class="graph-container"></div>
         </div>
 
         <div id="tab-cctv" class="hidden h-full p-4">
@@ -150,72 +184,82 @@
         <div id="tab-model" class="hidden container mx-auto max-w-5xl p-6">
             <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
                 <h2 class="text-xl font-bold mb-6 border-b pb-2">Model Performance Analysis (WEKA)</h2>
-                
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                     <button onclick="runModelTest('LSTM', 'CV-10')" class="pill-btn pill-lime hover:bg-green-400">LSTM (CV-10)</button>
                     <button onclick="runModelTest('LSTM', '80-20')" class="pill-btn pill-lime hover:bg-green-400">LSTM (80-20)</button>
-                    
                     <button onclick="runModelTest('Random Forest', 'CV-10')" class="pill-btn pill-lime hover:bg-green-400">Random Forest (CV-10)</button>
-                    <button onclick="runModelTest('Random Forest', '80-20')" class="pill-btn pill-lime hover: bg-green-400">Random Forest (80-20)</button>
-                    
+                    <button onclick="runModelTest('Random Forest', '80-20')" class="pill-btn pill-lime hover:bg-green-400">Random Forest (80-20)</button>
                     <button onclick="runModelTest('Logistic Reg', 'CV-10')" class="pill-btn pill-yellow hover:bg-yellow-300">Logistic Reg (CV-10)</button>
-                    <button onclick="runModelTest('Logistic Reg', '80-20')" class="pill-btn pill-yellow hover: bg-yellow-300">Logistic Reg (80-20)</button>
-                    
+                    <button onclick="runModelTest('Logistic Reg', '80-20')" class="pill-btn pill-yellow hover:bg-yellow-300">Logistic Reg (80-20)</button>
                     <button onclick="runModelTest('KNN', 'CV-10')" class="pill-btn pill-yellow hover:bg-yellow-300">KNN (CV-10)</button>
-                    <button onclick="runModelTest('KNN', '80-20')" class="pill-btn pill-yellow hover: bg-yellow-300">KNN (80-20)</button>
+                    <button onclick="runModelTest('KNN', '80-20')" class="pill-btn pill-yellow hover:bg-yellow-300">KNN (80-20)</button>
                 </div>
-
                 <div class="loader" id="model-loader"></div>
-                
                 <div id="model-results" class="hidden bg-gray-50 p-4 rounded border">
                     <h3 class="font-bold text-blue-800 mb-4 text-lg" id="result-title">Results</h3>
-                    
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left text-gray-600 border border-gray-200 bg-white">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b">
-                                <tr>
-                                    <th class="px-6 py-3 border-r">Metric</th>
-                                    <th class="px-6 py-3 border-r">Value</th>
-                                    <th class="px-6 py-3">Note</th>
-                                </tr>
+                                <tr><th class="px-6 py-3 border-r">Metric</th><th class="px-6 py-3 border-r">Value</th><th class="px-6 py-3">Note</th></tr>
                             </thead>
-                            <tbody id="result-body">
-                                </tbody>
+                            <tbody id="result-body"></tbody>
                         </table>
                     </div>
                 </div>
-                
-                <div class="mt-6 text-right">
-                    <button onclick="downloadCSV()" class="pill-btn pill-lime shadow">Download CSV</button>
-                </div>
+                <div class="mt-6 text-right"><button onclick="downloadCSV()" class="pill-btn pill-lime shadow">Download CSV</button></div>
             </div>
         </div>
-
     </main>
 
     <script>
-        // --- CONFIG ---
         const REPO_CSV_URL = './traffic_data.csv';
-        
-        // --- FIXED TIMEFRAME (08:30 to 21:30) ---
-        const TIME_SLOTS = [];
-        const TIME_LABELS = [];
+        const TIME_SLOTS = []; const TIME_LABELS = [];
         let startHour = 8, startMin = 30;
+        
         while (startHour < 21 || (startHour === 21 && startMin <= 30)) {
             TIME_SLOTS.push(startHour * 100 + startMin);
             const hStr = startHour < 10 ? `0${startHour}` : `${startHour}`;
             const mStr = startMin === 0 ? "00" : `${startMin}`;
             TIME_LABELS.push(`${hStr}:${mStr}`);
-            startMin += 30;
-            if (startMin === 60) { startMin = 0; startHour++; }
+            startMin += 30; if (startMin === 60) { startMin = 0; startHour++; }
         }
 
-        // --- STATE ---
-        let rawData = [], organizedData = {}, uniqueDates = [], uniqueRoutes = [];
-        let mapInitialized = false, mapObject = null, charts = {}; 
-        let historicalAverages = {};
+        const KNOWN_ROUTES = [
+            "FSKTM -> GATE 1 (KL GATE)", "FSKTM -> GATE 2 (PJ GATE)", "FSKTM -> GATE 3 (MAHSA GATE)", "FSKTM -> GATE 4 (DAMANSARA GATE)",
+            "GATE 1 (KL GATE) -> FSKTM", "GATE 1 (KL GATE) -> GATE 2 (PJ GATE)", "GATE 1 (KL GATE) -> GATE 3 (MAHSA GATE)", "GATE 1 (KL GATE) -> GATE 4 (DAMANSARA GATE)",
+            "GATE 1 (KL GATE) -> NPE (E10) PBAHARU KM13.3 EB", "GATE 1 (KL GATE) -> SPE (E39) BUKIT DESA KM3.1 NB",
+            "GATE 2 (PJ GATE) -> FSKTM", "GATE 2 (PJ GATE) -> GATE 1 (KL GATE)", "GATE 2 (PJ GATE) -> GATE 3 (MAHSA GATE)", "GATE 2 (PJ GATE) -> GATE 4 (DAMANSARA GATE)",
+            "GATE 3 (MAHSA GATE) -> FSKTM", "GATE 3 (MAHSA GATE) -> GATE 1 (KL GATE)", "GATE 3 (MAHSA GATE) -> GATE 2 (PJ GATE)", "GATE 3 (MAHSA GATE) -> GATE 4 (DAMANSARA GATE)",
+            "GATE 4 (DAMANSARA GATE) -> FSKTM", "GATE 4 (DAMANSARA GATE) -> GATE 1 (KL GATE)", "GATE 4 (DAMANSARA GATE) -> GATE 2 (PJ GATE)", "GATE 4 (DAMANSARA GATE) -> GATE 3 (MAHSA GATE)",
+            "NPE (E10) BRIDGE 19 KM12.8 WB -> GATE 1 (KL GATE)", "NPE (E10) VMS BANGSAR KM14 WB -> GATE 1 (KL GATE)",
+            "SPE (E39) KERINCHI KM0.2 NB -> GATE 1 (KL GATE)", "SPE (E39) SEPUTIH KM2.2 NB -> GATE 1 (KL GATE)",
+            "SRT (E23) KIARA KM5.65 MED -> GATE 4 (DAMANSARA GATE)", "SRT (E23) SEK17 KM2.6 EB -> GATE 2 (PJ GATE)"
+        ];
 
-        window.onload = function() { updateTime(); fetchData(); };
+        let rawData = [], organizedData = {}, uniqueDates = [];
+        let historicalAverages = {};
+        let mapInitialized = false, mapObject = null, charts = {}; 
+
+        function initDashboardShell() {
+            updateTime();
+            const container = document.getElementById('graphs-wrapper');
+            container.innerHTML = '';
+            
+            KNOWN_ROUTES.sort().forEach((route, index) => {
+                const div = document.createElement('div');
+                div.className = 'graph-card';
+                div.innerHTML = `
+                    <h3 class="chart-title" title="${route}">${route}</h3>
+                    <div class="chart-wrapper"><canvas id="chart-${index}"></canvas></div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.onload = function() { 
+            initDashboardShell(); 
+            fetchData();          
+        };
 
         function updateTime() {
             document.getElementById('refresh-time').innerText = new Date().toLocaleString('en-US', {
@@ -230,10 +274,15 @@
                 document.getElementById(`btn-${x}`).classList.remove('pill-active');
             });
             document.getElementById(`tab-${t}`).classList.remove('hidden');
-            document. getElementById(`btn-${t}`).classList.add('pill-active');
+            document.getElementById(`btn-${t}`).classList.add('pill-active');
             if(t === 'cctv') {
                 if(!mapInitialized) setTimeout(initMap, 200);
                 else setTimeout(() => mapObject.invalidateSize(), 200);
+            }
+            if(t === 'chart') {
+                setTimeout(() => {
+                    Object.values(charts).forEach(chart => chart.resize());
+                }, 100);
             }
         }
 
@@ -244,51 +293,47 @@
                     if (results.data && results.data.length > 0) {
                         rawData = results.data;
                         processData(rawData);
-                    } else {
-                        document.getElementById('graphs-wrapper').innerHTML = '<p class="text-center text-red-500">CSV Empty</p>';
                     }
                 },
-                error: function() {
-                    document.getElementById('graphs-wrapper').innerHTML = '<p class="text-center text-red-500">Failed to load CSV.  Ensure file exists. </p>';
+                error: function(err) {
+                    console.error("CSV Load Error", err);
                 }
             });
         }
 
         function processData(data) {
             organizedData = {}; 
-            let routeSet = new Set(), dateSet = new Set();
-            let sums = {};
+            let dateSet = new Set(), sums = {}; 
 
             data.forEach(row => {
                 const routeKey = `${row.origin_location} -> ${row.destination_location}`;
-                routeSet.add(routeKey);
-                dateSet.add(row.date);
-                
-                const ts = parseInt(row.timestamp);
-                const val = parseInt(row.calculated_journeytime_minute);
+                if(KNOWN_ROUTES.includes(routeKey)){
+                    dateSet.add(row.date);
+                    const ts = parseInt(row.timestamp);
+                    const val = parseInt(row.calculated_journeytime_minute);
 
-                if (!organizedData[row.date]) organizedData[row.date] = {};
-                if (!organizedData[row.date][routeKey]) organizedData[row.date][routeKey] = {};
-                organizedData[row.date][routeKey][ts] = val;
+                    if (!organizedData[row.date]) organizedData[row.date] = {};
+                    if (!organizedData[row.date][routeKey]) organizedData[row.date][routeKey] = {};
+                    organizedData[row.date][routeKey][ts] = val;
 
-                if (!sums[routeKey]) sums[routeKey] = {};
-                if (!sums[routeKey][ts]) sums[routeKey][ts] = { s: 0, c: 0 };
-                sums[routeKey][ts]. s += val;
-                sums[routeKey][ts].c += 1;
+                    if (!sums[routeKey]) sums[routeKey] = {};
+                    if (!sums[routeKey][ts]) sums[routeKey][ts] = { s: 0, c: 0 };
+                    sums[routeKey][ts].s += val;
+                    sums[routeKey][ts].c += 1;
+                }
             });
 
-            uniqueRoutes = Array.from(routeSet).sort();
             uniqueDates = Array.from(dateSet).sort((a, b) => {
-                const [dA, mA, yA] = a. split('. '); 
-                const [dB, mB, yB] = b. split('.');
+                const [dA, mA, yA] = a.split('.'); 
+                const [dB, mB, yB] = b.split('.');
                 return new Date(`20${yA}`, mA-1, dA) - new Date(`20${yB}`, mB-1, dB);
             });
 
-            uniqueRoutes.forEach(r => {
+            KNOWN_ROUTES.forEach(r => {
                 historicalAverages[r] = {};
                 TIME_SLOTS.forEach(ts => {
-                    if (sums[r] && sums[r][ts] && sums[r][ts]. c > 0) {
-                        historicalAverages[r][ts] = sums[r][ts]. s / sums[r][ts]. c;
+                    if (sums[r] && sums[r][ts] && sums[r][ts].c > 0) {
+                        historicalAverages[r][ts] = sums[r][ts].s / sums[r][ts].c;
                     } else {
                         historicalAverages[r][ts] = 0; 
                     }
@@ -307,21 +352,21 @@
             const buttonDefinitions = [
                 { label: '3 Days Ago', offset: 3, type: 'history' },
                 { label: '2 Days Ago', offset: 2, type: 'history' },
-                { label: 'Yesterday', offset: 1, type:  'history' },
-                { label: 'Today', offset: 0, type:  'today' },
+                { label: 'Yesterday', offset: 1, type: 'history' },
+                { label: 'Today', offset: 0, type: 'today' },
                 { label: 'Tomorrow', type: 'pred1' },
                 { label: 'Day After', type: 'pred2' }
             ];
 
             containers.forEach(c => {
-                if(! c) return;
+                if(!c) return;
                 c.innerHTML = '';
                 buttonDefinitions.forEach(def => {
-                    const btn = document. createElement('button');
-                    if(def.type. includes('pred')) {
+                    const btn = document.createElement('button');
+                    if(def.type.includes('pred')) {
                         btn.className = "pill-btn pill-yellow text-xs whitespace-nowrap border-blue-500";
                     } else {
-                        btn. className = "pill-btn pill-lime text-xs whitespace-nowrap";
+                        btn.className = "pill-btn pill-lime text-xs whitespace-nowrap";
                     }
                     
                     btn.innerText = def.label;
@@ -331,7 +376,7 @@
                         const dateIndex = uniqueDates.length - 1 - def.offset;
                         if(dateIndex < 0) {
                             btn.disabled = true;
-                            btn. classList.add('opacity-50', 'cursor-not-allowed');
+                            btn.classList.add('opacity-50', 'cursor-not-allowed');
                         }
                     }
                     c.appendChild(btn);
@@ -340,65 +385,41 @@
         }
 
         function updateCharts(label) {
-            const container = document.getElementById('graphs-wrapper');
-            
             document.querySelectorAll('#date-buttons button, #date-buttons-mobile button').forEach(b => {
                 if (b.innerText === label) {
                     b.classList.add('pill-active');
                     b.classList.remove('opacity-70');
                 } else {
                     b.classList.remove('pill-active');
-                    if(! b.disabled) b.classList.add('opacity-70');
+                    if(!b.disabled) b.classList.add('opacity-70');
                 }
             });
 
-            let targetDate = uniqueDates[uniqueDates.length - 1];
+            let targetDate = uniqueDates[uniqueDates.length - 1]; 
             let mode = 'history'; 
             let noiseFactor = 0;
 
-            if (label === 'Today') {
-                targetDate = uniqueDates[uniqueDates.length - 1];
-                mode = 'today';
-            } else if (label === 'Yesterday') {
-                targetDate = uniqueDates[uniqueDates.length - 2];
-            } else if (label === '2 Days Ago') {
-                targetDate = uniqueDates[uniqueDates.length - 3];
-            } else if (label === '3 Days Ago') {
-                targetDate = uniqueDates[uniqueDates.length - 4];
-            } else if (label === 'Tomorrow') {
-                mode = 'prediction';
-                noiseFactor = 1.0;
-            } else if (label === 'Day After') {
-                mode = 'prediction';
-                noiseFactor = 1.5;
-            }
+            if (label === 'Today') { mode = 'today'; }
+            else if (label === 'Yesterday') targetDate = uniqueDates[uniqueDates.length - 2];
+            else if (label === '2 Days Ago') targetDate = uniqueDates[uniqueDates.length - 3];
+            else if (label === '3 Days Ago') targetDate = uniqueDates[uniqueDates.length - 4];
+            else if (label === 'Tomorrow') { mode = 'prediction'; noiseFactor = 1.0; }
+            else if (label === 'Day After') { mode = 'prediction'; noiseFactor = 1.5; }
 
             const now = new Date();
-            const currentHour = now.getHours();
-            const currentMin = now. getMinutes() < 30 ? 0 : 30;
-            const currentTimeInt = currentHour * 100 + currentMin;
+            const curT = now.getHours() * 100 + (now.getMinutes() < 30 ? 0 : 30);
 
-            if (container.children.length !== uniqueRoutes.length) {
-                container.innerHTML = '';
-                uniqueRoutes.forEach((route, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'graph-card';
-                    div.innerHTML = `
-                        <h3 class="chart-title" title="${route}">${route}</h3>
-                        <div class="chart-wrapper"><canvas id="chart-${index}"></canvas></div>
-                    `;
-                    container.appendChild(div);
-                });
-            }
-
-            uniqueRoutes.forEach((route, index) => {
-                const ctx = document.getElementById(`chart-${index}`).getContext('2d');
+            KNOWN_ROUTES.sort().forEach((route, index) => {
+                const canvas = document.getElementById(`chart-${index}`);
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                
                 let realData = [];
                 let predData = [];
 
                 TIME_SLOTS.forEach(slot => {
-                    let baseVal = organizedData[targetDate]?.[route]?.[slot];
                     let avgVal = historicalAverages[route][slot];
+                    let realVal = organizedData[targetDate]?.[route]?.[slot];
 
                     if (mode === 'prediction') {
                         if (avgVal !== undefined && avgVal > 0) {
@@ -409,8 +430,8 @@
                         realData.push(null); 
                     } 
                     else if (mode === 'today') {
-                        if (slot <= currentTimeInt) {
-                            realData.push(baseVal !== undefined ? baseVal : null);
+                        if (slot <= curT) {
+                            realData.push(realVal !== undefined ? realVal : null);
                             predData.push(null);
                         } else {
                             realData.push(null);
@@ -422,8 +443,8 @@
                         }
                     } 
                     else {
-                        realData.push(baseVal !== undefined ? baseVal :  null);
-                        predData. push(null);
+                        realData.push(realVal !== undefined ? realVal : null);
+                        predData.push(null);
                     }
                 });
 
@@ -446,28 +467,22 @@
                             labels: TIME_LABELS,
                             datasets: [
                                 {
-                                    label: 'Real',
-                                    data: realData,
-                                    borderColor:  '#3b82f6',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    borderWidth: 2, tension: 0.3, fill: true, pointRadius: 2, spanGaps: true
+                                    label: 'Real', data: realData, borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, tension: 0.3, fill: true, pointRadius: 2, spanGaps: true
                                 },
                                 {
-                                    label: 'Prediction',
-                                    data: predData,
-                                    borderColor: '#f43f5e',
-                                    backgroundColor: 'rgba(244, 63, 94, 0.1)',
-                                    borderWidth:  2, borderDash: [5, 5], tension: 0.3, fill: true, pointRadius: 2, spanGaps: true
+                                    label: 'Prediction', data: predData, borderColor: '#f43f5e',
+                                    backgroundColor: 'rgba(244, 63, 94, 0.1)', borderWidth: 2, borderDash: [5, 5], tension: 0.3, fill: true, pointRadius: 2, spanGaps: true
                                 }
                             ]
                         },
                         options: {
-                            responsive: true, maintainAspectRatio:  false,
+                            responsive: true, maintainAspectRatio: false,
                             interaction: { intersect: false, mode: 'index' },
                             plugins: { legend: { display: false } },
-                            scales: {
-                                x: { ticks: { font: { size: 9 }, maxTicksLimit: 6, autoSkip: true }, grid: { display: false } },
-                                y: { min: 0, max: 30, ticks: { font: { size: 9 }, stepSize: 10 }, grid:  { color: '#f1f5f9' } }
+                            scales: { 
+                                x: { ticks: { font: {size:9}, maxTicksLimit: 6, autoSkip: true }, grid: { display: false } },
+                                y: { min: 0, max: 30, ticks: { font: {size:9}, stepSize: 10 }, grid: { color: '#f1f5f9' } }
                             }
                         }
                     });
@@ -475,7 +490,7 @@
             });
         }
 
-        // --- MAP & UTILS (STABLE VERSION - ONLY FIXED SPACING) ---
+        // --- MAP & UTILS (REVERTED TO PREVIOUS WORKING VERSION) ---
         function initMap() {
             if(mapInitialized) return;
             mapObject = L.map('map').setView([3.1275, 101.6506], 13);
@@ -488,27 +503,27 @@
                 {n:"GATE 3 (MAHSA)", l:[3.118839, 101.651122], c:"blue"},
                 {n:"GATE 4 (DAMANSARA)", l:[3.137486, 101.658259], c:"blue"}
             ];
-            points.forEach(p => L.circleMarker(p.l, {color: p.c, radius:10, fillOpacity:0.8, stroke:  true, weight: 2}).addTo(mapObject).bindPopup(`<b>${p.n}</b>`));
+            points.forEach(p => L.circleMarker(p.l, {color:p.c, radius:10, fillOpacity:0.8, stroke: true, weight: 2}).addTo(mapObject).bindPopup(`<b>${p.n}</b>`));
 
             const cams = [
-                {name: "NPE KM13. 3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14. jpg"},
+                {name: "NPE KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14.jpg"},
                 {name: "NPE KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "c2.fgies.com/sd-npe/NPE-23.jpg"},
                 {name: "NPE KM14 WB", lat: 3.121334, lon: 101.674702, url: "c2.fgies.com/sd-npe/NPE-24.jpg"},
                 {name: "SRT KM2.6 EB", lat: 3.132604, lon: 101.635048, url: "c12.fgies.com/sd-srt/SRT-03.jpg"},
                 {name: "SRT KM5.65 MED", lat: 3.136340, lon: 101.656388, url: "c12.fgies.com/sd-srt/SRT-06.jpg"},
                 {name: "SPE KM0.2 NB", lat: 3.114883, lon: 101.665004, url: "c12.fgies.com/sd-spe/SPE-01.jpg"},
                 {name: "SPE KM2.2 NB", lat: 3.111576, lon: 101.687789, url: "c12.fgies.com/sd-spe/SPE-02.jpg"},
-                {name: "SPE KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "c12.fgies.com/sd-spe/SPE-03.jpg"},
+                {name: "SPE KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "c12.fgies.com/sd-spe/SPE-03.jpg"}
             ];
-            const icon = L.divIcon({className:'', html:'<div style="background: orange;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px black;"></div>'});
+            const icon = L.divIcon({className:'', html:'<div style="background:orange;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px black;"></div>'});
             
             cams.forEach(c => {
-                const url = `https://wsrv.nl/? url=${c.url}&t=${Date.now()}`;
+                const url = `https://wsrv.nl/?url=${c.url}&t=${Date.now()}`;
                 const popupContent = `
                     <div class="text-center">
                         <b class="text-sm mb-1 block">${c.name}</b>
                         <img src="${url}" style="width:100%; min-width:280px; min-height:180px; background:#eee; display:block; border-radius:4px;"
-                        onerror="this.parentElement.innerHTML='<span style=\\'color: red\\'>Offline</span>';">
+                        onerror="this.parentElement.innerHTML='<span style=\\'color:red\\'>Offline</span>';">
                     </div>`;
                 L.marker([c.lat, c.lon], {icon}).addTo(mapObject).bindPopup(popupContent);
             });
@@ -530,7 +545,7 @@
                 title.innerText = `Results for ${m} [${t}]`;
                 
                 let baseAcc = 0.85;
-                if(m. includes('LSTM')) baseAcc = 0.92;
+                if(m.includes('LSTM')) baseAcc = 0.92;
                 if(m.includes('Forest')) baseAcc = 0.94;
                 if(m.includes('KNN')) baseAcc = 0.82;
                 
@@ -542,8 +557,8 @@
 
                 const metrics = [
                     {n: 'Accuracy', v: (acc * 100).toFixed(2) + '%', note: 'Correctly Classified Instances'},
-                    {n:  'FP Rate', v: (0.1 + noise).toFixed(3), note: 'False Positive Instances'},
-                    {n:  'Precision', v: p.toFixed(3), note: 'Weighted Avg'},
+                    {n: 'FP Rate', v: (0.1 + noise).toFixed(3), note: 'False Positive Instances'},
+                    {n: 'Precision', v: p.toFixed(3), note: 'Weighted Avg'},
                     {n: 'Recall', v: r.toFixed(3), note: 'Weighted Avg'},
                     {n: 'F1-Score', v: f1.toFixed(3), note: 'Harmonic Mean'},
                     {n: 'Area-Under-Curve', v: (0.9 + noise).toFixed(3), note: 'ROC Area'},
@@ -564,13 +579,23 @@
         }
 
         function downloadCSV() {
-            if(! rawData. length) return alert("No data");
+            if(!rawData.length) return alert("No data");
             const csv = Papa.unparse(rawData);
             const a = document.createElement("a");
             a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
             a.download = "traffic_data.csv";
             a.click();
         }
+
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                Object.values(charts).forEach(chart => {
+                    if(chart) chart.resize();
+                });
+            }, 250);
+        });
     </script>
 </body>
 </html>
