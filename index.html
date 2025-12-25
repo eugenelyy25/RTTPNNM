@@ -4,8 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traffic Prediction Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚦</text></svg>">
     
-    <script src="https://cdn.tailwindcss.com"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script> <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" /> <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script> <style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    
+    <style>
         /* Custom Colors & Shapes */
         :root {
             --cyan-pane: #00FFFF;
@@ -15,43 +22,42 @@
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
         
-        /* The Cyan Pane */
         .cyan-pane {
             background-color: var(--cyan-pane);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        /* Pill Buttons */
         .pill-btn {
-            border-radius: 9999px; /* Pill shape */
-            padding: 10px 24px;
+            border-radius: 9999px;
+            padding: 8px 20px;
             font-weight: bold;
+            font-size: 0.9rem;
             transition: transform 0.1s, box-shadow 0.1s;
             cursor: pointer;
             border: 2px solid #000;
             text-align: center;
+            white-space: nowrap;
         }
         
         .pill-btn:active { transform: scale(0.95); }
         .pill-yellow { background-color: var(--btn-yellow); color: black; }
         .pill-lime { background-color: var(--btn-lime); color: black; }
-        .pill-active { border: 3px solid blue; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
+        .pill-active { border: 3px solid #1d4ed8; box-shadow: inset 0 0 8px rgba(0,0,0,0.3); }
 
-        /* Graph Grid */
         .graph-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
             padding: 1rem;
         }
         .graph-card {
             background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
         }
 
-        /* Weather Image Overlay */
         .weather-widget {
             border: 2px solid white;
             border-radius: 10px;
@@ -59,90 +65,90 @@
             width: 200px;
             height: 120px;
             background: #000;
+            flex-shrink: 0;
         }
 
-        #map { height: 600px; width: 100%; border-radius: 12px; }
+        #map { height: 65vh; width: 100%; border-radius: 12px; z-index: 1; }
         
-        /* Loading Spinner */
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; display: none; margin: 20px auto;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <header class="cyan-pane p-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-50">
-        <div class="flex items-center gap-4 mb-4 md:mb-0">
-            <h1 class="text-2xl font-bold text-slate-800 mr-4">🚦 TrafficPred</h1>
+    <header class="cyan-pane p-4 flex flex-col lg:flex-row justify-between items-center sticky top-0 z-50 gap-4">
+        <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">🚦 TrafficPred</h1>
             
-            <button onclick="switchTab('chart')" id="btn-chart" class="pill-btn pill-yellow pill-active">7-Day Chart</button>
-            <button onclick="switchTab('cctv')" id="btn-cctv" class="pill-btn pill-lime">CCTV Image</button>
-            <button onclick="switchTab('model')" id="btn-model" class="pill-btn pill-yellow">Model Test</button>
+            <div class="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto justify-center">
+                <button onclick="switchTab('chart')" id="btn-chart" class="pill-btn pill-yellow pill-active">7-Day Chart</button>
+                <button onclick="switchTab('cctv')" id="btn-cctv" class="pill-btn pill-lime">CCTV Image</button>
+                <button onclick="switchTab('model')" id="btn-model" class="pill-btn pill-yellow">Model Test</button>
+            </div>
         </div>
 
-        <div class="flex items-center gap-4">
-            <div class="weather-widget relative">
+        <div class="flex items-center gap-4 hidden md:flex">
+            <div class="weather-widget relative shadow-md">
                 <iframe 
                     width="200" 
                     height="120" 
                     src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=200&height=120&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" 
                     frameborder="0"
                     style="pointer-events:none;"> </iframe>
-                <span class="absolute bottom-1 left-1 text-[10px] text-white font-bold bg-black bg-opacity-50 px-1">Sat: UM Area</span>
+                <span class="absolute bottom-1 left-1 text-[10px] text-white font-bold bg-black bg-opacity-60 px-2 py-0.5 rounded">Sat: UM Area</span>
             </div>
             
-            <div class="text-right text-sm font-mono bg-white bg-opacity-50 p-2 rounded">
-                <div>Last Refresh:</div>
-                <div id="refresh-time" class="font-bold">Loading...</div>
+            <div class="text-right text-xs font-mono bg-white bg-opacity-60 p-2 rounded border border-gray-300">
+                <div class="text-gray-600">Last Refresh:</div>
+                <div id="refresh-time" class="font-bold text-gray-900">Loading...</div>
             </div>
         </div>
     </header>
 
-    <main class="flex-grow p-4">
+    <main class="flex-grow p-4 md:p-6">
         
-        <div id="tab-chart" class="block">
-            <div class="flex flex-wrap gap-2 justify-center mb-6">
-                <button onclick="updateCharts('minus3')" class="pill-btn pill-lime text-sm">3 Days Ago</button>
-                <button onclick="updateCharts('minus2')" class="pill-btn pill-lime text-sm">2 Days Ago</button>
-                <button onclick="updateCharts('minus1')" class="pill-btn pill-lime text-sm">1 Day Ago</button>
-                <button onclick="updateCharts('today')" class="pill-btn pill-yellow text-sm font-bold border-4 border-blue-500">Today</button>
-                <button onclick="updateCharts('plus1')" class="pill-btn pill-yellow text-sm">Tomorrow (Pred)</button>
-                <button onclick="updateCharts('plus2')" class="pill-btn pill-yellow text-sm">Day After (Pred)</button>
+        <div id="tab-chart" class="block animate-fade-in">
+            <div class="flex flex-wrap gap-2 justify-center mb-6" id="date-buttons">
+                <button class="pill-btn pill-lime text-xs opacity-50 cursor-not-allowed">Loading Dates...</button>
             </div>
 
             <div id="graphs-wrapper" class="graph-container">
-                <p class="text-center w-full mt-10">Loading Traffic Data...</p>
+                <p class="text-center w-full mt-10 text-gray-500 animate-pulse">Loading Traffic Data...</p>
             </div>
         </div>
 
         <div id="tab-cctv" class="hidden">
-            <div class="bg-white p-4 rounded-xl shadow-lg">
-                <h2 class="text-xl font-bold mb-4">Live Traffic Monitoring & Checkpoints</h2>
+            <div class="bg-white p-2 md:p-4 rounded-xl shadow-lg border border-gray-200">
+                <div class="flex justify-between items-center mb-4 px-2">
+                    <h2 class="text-lg md:text-xl font-bold text-gray-800">Live Traffic Monitoring</h2>
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-bold">Live Feed</span>
+                </div>
                 <div id="map"></div>
             </div>
         </div>
 
-        <div id="tab-model" class="hidden container mx-auto max-w-4xl">
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h2 class="text-2xl font-bold mb-4">Model Performance Analysis (WEKA)</h2>
+        <div id="tab-model" class="hidden container mx-auto max-w-5xl">
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Model Performance Analysis (WEKA)</h2>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <button onclick="runModelTest('LSTM', 'CV-10')" class="pill-btn pill-lime text-xs">LSTM (CV-10)</button>
-                    <button onclick="runModelTest('LSTM', '80-20')" class="pill-btn pill-lime text-xs">LSTM (80-20)</button>
-                    <button onclick="runModelTest('RF', 'CV-10')" class="pill-btn pill-lime text-xs">Random Forest (CV-10)</button>
-                    <button onclick="runModelTest('RF', '80-20')" class="pill-btn pill-lime text-xs">Random Forest (80-20)</button>
-                    <button onclick="runModelTest('LR', 'CV-10')" class="pill-btn pill-yellow text-xs">Logistic Reg (CV-10)</button>
-                    <button onclick="runModelTest('LR', '80-20')" class="pill-btn pill-yellow text-xs">Logistic Reg (80-20)</button>
-                    <button onclick="runModelTest('KNN', 'CV-10')" class="pill-btn pill-yellow text-xs">KNN (CV-10)</button>
-                    <button onclick="runModelTest('KNN', '80-20')" class="pill-btn pill-yellow text-xs">KNN (80-20)</button>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                    <button onclick="runModelTest('LSTM', 'CV-10')" class="pill-btn pill-lime text-xs hover:bg-green-400">LSTM (CV-10)</button>
+                    <button onclick="runModelTest('LSTM', '80-20')" class="pill-btn pill-lime text-xs hover:bg-green-400">LSTM (80-20)</button>
+                    <button onclick="runModelTest('RF', 'CV-10')" class="pill-btn pill-lime text-xs hover:bg-green-400">Random Forest (CV-10)</button>
+                    <button onclick="runModelTest('RF', '80-20')" class="pill-btn pill-lime text-xs hover:bg-green-400">Random Forest (80-20)</button>
+                    <button onclick="runModelTest('LR', 'CV-10')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">Logistic Reg (CV-10)</button>
+                    <button onclick="runModelTest('LR', '80-20')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">Logistic Reg (80-20)</button>
+                    <button onclick="runModelTest('KNN', 'CV-10')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">KNN (CV-10)</button>
+                    <button onclick="runModelTest('KNN', '80-20')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">KNN (80-20)</button>
                 </div>
 
                 <div class="loader" id="model-loader"></div>
 
-                <div id="model-results" class="hidden">
-                    <h3 class="text-lg font-bold mb-2 text-blue-800" id="result-title">Results</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <div id="model-results" class="hidden animate-fade-in">
+                    <h3 class="text-lg font-bold mb-4 text-blue-800 bg-blue-50 p-2 rounded" id="result-title">Results</h3>
+                    <div class="overflow-x-auto rounded-lg border border-gray-200">
+                        <table class="w-full text-sm text-left text-gray-600">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr>
                                     <th class="px-6 py-3">Metric</th>
                                     <th class="px-6 py-3">Value</th>
@@ -150,14 +156,14 @@
                                 </tr>
                             </thead>
                             <tbody id="result-body">
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div class="mt-8 pt-4 border-t">
-                    <button onclick="downloadCSV()" class="pill-btn pill-lime w-full md:w-auto">Download traffic_data.csv</button>
-                    <p class="text-xs text-gray-400 mt-2">Note: 'is_Jam' will be converted to Nominal for Weka compatibility upon download.</p>
+                <div class="mt-8 pt-6 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p class="text-xs text-gray-400 italic">Data exported from WEKA environment. 'is_Jam' class converted to Nominal.</p>
+                    <button onclick="downloadCSV()" class="pill-btn pill-lime w-full md:w-auto shadow-md">Download traffic_data.csv</button>
                 </div>
             </div>
         </div>
@@ -166,14 +172,16 @@
 
     <script>
         // --- CONFIGURATION ---
-        // CHANGED: Using relative path. This requires the CSV to be in the same folder as index.html
-        // NOTE: This will NOT work if you open the HTML file directly on your computer (file:// protocol)
-        // It MUST be hosted on a server (like GitHub Pages or localhost)
         const REPO_CSV_URL = './traffic_data.csv';
         
+        // State
         let rawData = [];
+        let organizedData = {}; // { date_string: { route_key: [ {time, val} ] } }
+        let uniqueDates = [];
+        let uniqueRoutes = [];
         let mapInitialized = false;
         let mapObject = null;
+        let charts = {}; // Store chart instances to update them
 
         // --- INIT ---
         window.onload = function() {
@@ -183,26 +191,25 @@
 
         function updateTime() {
             const now = new Date();
-            document.getElementById('refresh-time').innerText = now.toLocaleString();
+            document.getElementById('refresh-time').innerText = now.toLocaleString('en-MY', { hour12: true });
         }
 
         // --- TAB SWITCHING ---
         function switchTab(tabName) {
-            // Hide all
             ['chart', 'cctv', 'model'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
                 document.getElementById(`btn-${t}`).classList.remove('pill-active');
             });
-            // Show selected
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
             document.getElementById(`btn-${tabName}`).classList.add('pill-active');
 
-            if (tabName === 'cctv' && !mapInitialized) {
-                setTimeout(initMap, 200); // Delay slightly for layout to settle
+            if (tabName === 'cctv') {
+                if (!mapInitialized) setTimeout(initMap, 100);
+                else setTimeout(() => { mapObject.invalidateSize(); }, 100);
             }
         }
 
-        // --- DATA FETCHING ---
+        // --- DATA FETCHING & PROCESSING ---
         function fetchData() {
             Papa.parse(REPO_CSV_URL, {
                 download: true,
@@ -211,101 +218,202 @@
                 complete: function(results) {
                     if (results.data && results.data.length > 0) {
                         rawData = results.data;
-                        console.log("Data Loaded Successfully:", rawData.length, "rows");
-                        updateCharts('today');
+                        processData(rawData);
                     } else {
-                        showError("CSV file appears empty or could not be parsed.");
+                        showError("CSV is empty.");
                     }
                 },
                 error: function(err) {
-                    console.error("CSV Load Error:", err);
-                    showError(`Failed to load traffic_data.csv. <br><br><b>Important:</b> If you are opening this file directly (file://), it will fail due to browser security. Please upload to GitHub Pages.`);
+                    console.error("CSV Error:", err);
+                    showError(`Failed to load traffic_data.csv. Make sure the file is in the same folder.`);
                 }
             });
         }
 
+        function processData(data) {
+            organizedData = {};
+            let routeSet = new Set();
+            let dateSet = new Set();
+
+            data.forEach(row => {
+                // Key for route: Origin -> Dest
+                const routeKey = `${row.origin_location} -> ${row.destination_location}`;
+                routeSet.add(routeKey);
+                
+                // Key for date: using the 'date' column directly (e.g., 16.12.25)
+                const dateKey = row.date;
+                dateSet.add(dateKey);
+
+                if (!organizedData[dateKey]) organizedData[dateKey] = {};
+                if (!organizedData[dateKey][routeKey]) organizedData[dateKey][routeKey] = [];
+
+                // Store time and value
+                // time format in csv is int (930, 2130). We keep it for sorting.
+                organizedData[dateKey][routeKey].push({
+                    rawTime: parseInt(row.timestamp),
+                    val: parseInt(row.calculated_journeytime_minute)
+                });
+            });
+
+            // Convert Sets to Arrays and Sort
+            uniqueRoutes = Array.from(routeSet);
+            // Sort dates assuming DD.MM.YY format
+            uniqueDates = Array.from(dateSet).sort((a, b) => {
+                const partsA = a.split('.');
+                const partsB = b.split('.');
+                // new Date(year, monthIndex, day)
+                const dateA = new Date(`20${partsA[2]}`, partsA[1]-1, partsA[0]);
+                const dateB = new Date(`20${partsB[2]}`, partsB[1]-1, partsB[0]);
+                return dateA - dateB;
+            });
+
+            console.log("Unique Routes:", uniqueRoutes.length);
+            console.log("Unique Dates:", uniqueDates);
+
+            generateDateButtons();
+            // Default to the latest date available
+            if(uniqueDates.length > 0) {
+                updateCharts(uniqueDates[uniqueDates.length - 1]);
+            }
+        }
+
+        function generateDateButtons() {
+            const btnContainer = document.getElementById('date-buttons');
+            btnContainer.innerHTML = '';
+
+            // We only show up to 5 most recent dates found in CSV
+            const recentDates = uniqueDates.slice(-5);
+
+            recentDates.forEach(date => {
+                const btn = document.createElement('button');
+                btn.className = "pill-btn pill-lime text-xs mx-1";
+                btn.innerText = date;
+                btn.onclick = () => updateCharts(date);
+                btnContainer.appendChild(btn);
+            });
+
+            // Add a "Pred" button just for UI completeness (simulated)
+            const predBtn = document.createElement('button');
+            predBtn.className = "pill-btn pill-yellow text-xs mx-1";
+            predBtn.innerText = "Prediction (Next)";
+            predBtn.onclick = () => updateCharts('PREDICTION');
+            btnContainer.appendChild(predBtn);
+        }
+
+        function formatTime(timeInt) {
+            // Converts 930 -> 09:30, 2130 -> 21:30
+            let s = timeInt.toString();
+            while(s.length < 4) s = "0" + s;
+            return s.substring(0, 2) + ":" + s.substring(2);
+        }
+
         function showError(msg) {
             document.getElementById('graphs-wrapper').innerHTML = `
-                <div class="col-span-full text-center p-10 bg-red-100 text-red-700 rounded-lg">
-                    <h3 class="font-bold text-lg">Data Loading Error</h3>
+                <div class="col-span-full text-center p-10 bg-red-50 text-red-700 rounded-lg border border-red-200">
+                    <h3 class="font-bold text-lg">⚠️ Data Loading Error</h3>
                     <p>${msg}</p>
                 </div>`;
         }
 
         // --- CHARTS LOGIC ---
-        function updateCharts(timeframe) {
+        function updateCharts(selectedDate) {
             const container = document.getElementById('graphs-wrapper');
-            container.innerHTML = ''; 
+            
+            // Highlight selected button
+            const buttons = document.getElementById('date-buttons').querySelectorAll('button');
+            buttons.forEach(b => {
+                if(b.innerText === selectedDate || (selectedDate === 'PREDICTION' && b.innerText.includes('Prediction'))) {
+                    b.classList.add('ring-2', 'ring-blue-500', 'font-bold');
+                } else {
+                    b.classList.remove('ring-2', 'ring-blue-500', 'font-bold');
+                }
+            });
 
-            if(rawData.length === 0) {
-                container.innerHTML = '<p class="text-center w-full">Waiting for data...</p>';
-                return;
+            // If charts don't exist yet, create containers
+            if (Object.keys(charts).length === 0) {
+                container.innerHTML = ''; 
+                uniqueRoutes.forEach((route, index) => {
+                    const canvasId = `chart-${index}`;
+                    const div = document.createElement('div');
+                    div.className = 'graph-card';
+                    div.innerHTML = `
+                        <h3 class="font-bold text-xs mb-2 text-center text-gray-500 h-8 flex items-center justify-center overflow-hidden leading-tight">${route}</h3>
+                        <canvas id="${canvasId}" height="200"></canvas>
+                    `;
+                    container.appendChild(div);
+                });
             }
 
-            let isPrediction = (timeframe === 'plus1' || timeframe === 'plus2' || timeframe === 'today');
-            
-            // Route Names
-            const routeNames = [
-                "FSKTM -> KL Gate", "KL Gate -> NPE Bridge", "PJ Gate -> Library", "Mahsa -> Gate 3",
-                "Damansara Gate -> Main", "Engineering -> Gate 2", "Route 7", "Route 8", "Route 9", "Route 10",
-                "Route 11", "Route 12", "Route 13", "Route 14", "Route 15", "Route 16",
-                "Route 17", "Route 18", "Route 19", "Route 20", "Route 21", "Route 22",
-                "Route 23", "Route 24", "Route 25", "Route 26", "Route 27", "Route 28"
-            ];
+            let isPrediction = (selectedDate === 'PREDICTION');
 
-            routeNames.forEach((route, index) => {
+            uniqueRoutes.forEach((route, index) => {
                 const canvasId = `chart-${index}`;
-                
-                const div = document.createElement('div');
-                div.className = 'graph-card';
-                div.innerHTML = `
-                    <h3 class="font-bold text-sm mb-2 text-center text-gray-700">${route}</h3>
-                    <canvas id="${canvasId}"></canvas>
-                `;
-                container.appendChild(div);
-
                 const ctx = document.getElementById(canvasId).getContext('2d');
-                const lineColor = isPrediction ? 'rgb(255, 99, 132)' : 'rgb(54, 162, 235)';
-                const label = isPrediction ? 'LSTM Prediction' : 'Historical Data';
-
-                // --- GENERATE LABELS 08:00 TO 21:00 ---
-                const labels = [];
-                const dataPoints = [];
                 
-                for(let h=8; h<=21; h++) {
-                    // Format hour as 08, 09, 10...
-                    let hourStr = h < 10 ? "0" + h : "" + h;
-                    
-                    // Always add the :00 mark
-                    labels.push(`${hourStr}:00`);
-                    dataPoints.push(Math.floor(Math.random() * 25) + 5); 
+                // Prepare Data
+                let labels = [];
+                let dataPoints = [];
 
-                    // Add :30 mark ONLY if hour is less than 21 (Stop before 21:30)
-                    if(h < 21) {
-                        labels.push(`${hourStr}:30`);
-                        dataPoints.push(Math.floor(Math.random() * 25) + 5);
-                    }
+                if (isPrediction) {
+                    // Simulation: Use the last real date's data + small noise
+                    const lastDate = uniqueDates[uniqueDates.length - 1];
+                    const dayData = organizedData[lastDate][route] || [];
+                    
+                    // Sort by time
+                    dayData.sort((a,b) => a.rawTime - b.rawTime);
+                    
+                    labels = dayData.map(d => formatTime(d.rawTime));
+                    dataPoints = dayData.map(d => Math.max(0, d.val + (Math.random() * 4 - 2))); // Add noise
+                } else {
+                    const dayData = organizedData[selectedDate] ? (organizedData[selectedDate][route] || []) : [];
+                    
+                    // Sort by time
+                    dayData.sort((a,b) => a.rawTime - b.rawTime);
+                    
+                    labels = dayData.map(d => formatTime(d.rawTime));
+                    dataPoints = dayData.map(d => d.val);
                 }
 
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: `${label} (mins)`,
-                            data: dataPoints,
-                            borderColor: lineColor,
-                            tension: 0.4,
-                            fill: false,
-                            pointRadius: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: { y: { beginAtZero: true } },
-                        plugins: { legend: { display: false } }
-                    }
-                });
+                // Config
+                const lineColor = isPrediction ? 'rgb(255, 99, 132)' : 'rgb(54, 162, 235)';
+                const bgFill = isPrediction ? 'rgba(255, 99, 132, 0.1)' : 'rgba(54, 162, 235, 0.1)';
+
+                // Update or Create Chart
+                if (charts[route]) {
+                    charts[route].data.labels = labels;
+                    charts[route].data.datasets[0].data = dataPoints;
+                    charts[route].data.datasets[0].label = isPrediction ? "Predicted Time (min)" : "Journey Time (min)";
+                    charts[route].data.datasets[0].borderColor = lineColor;
+                    charts[route].data.datasets[0].backgroundColor = bgFill;
+                    charts[route].update();
+                } else {
+                    charts[route] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: "Journey Time (min)",
+                                data: dataPoints,
+                                borderColor: lineColor,
+                                backgroundColor: bgFill,
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 3,
+                                pointHoverRadius: 5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { intersect: false, mode: 'index' },
+                            scales: { 
+                                y: { beginAtZero: true, title: {display: true, text: 'Mins'} },
+                                x: { grid: { display: false } }
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                }
             });
         }
 
@@ -313,54 +421,60 @@
         function initMap() {
             if (mapInitialized) return;
             
-            mapObject = L.map('map').setView([3.127503, 101.650681], 14);
+            mapObject = L.map('map').setView([3.127503, 101.650681], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
+                attribution: '&copy; OpenStreetMap'
             }).addTo(mapObject);
 
             const checkpoints = [
-                {name: "FSKTM (TARGET)", lat: 3.127503, lon: 101.650681, color: "red"},
-                {name: "GATE 1 (KL GATE)", lat: 3.118774, lon: 101.663074, color: "green"},
-                {name: "GATE 2 (PJ GATE)", lat: 3.115642, lon: 101.650832, color: "green"},
-                {name: "GATE 3 (MAHSA GATE)", lat: 3.118839, lon: 101.651122, color: "green"},
-                {name: "GATE 4 (DAMANSARA GATE)", lat: 3.137486, lon: 101.658259, color: "green"},
+                {name: "FSKTM (TARGET)", lat: 3.127503, lon: 101.650681},
+                {name: "GATE 1 (KL GATE)", lat: 3.118774, lon: 101.663074},
+                {name: "GATE 2 (PJ GATE)", lat: 3.115642, lon: 101.650832},
+                {name: "GATE 3 (MAHSA GATE)", lat: 3.118839, lon: 101.651122},
+                {name: "GATE 4 (DAMANSARA GATE)", lat: 3.137486, lon: 101.658259},
             ];
 
             checkpoints.forEach(cp => {
-                L.marker([cp.lat, cp.lon]).addTo(mapObject).bindPopup(`<b>${cp.name}</b>`);
+                const color = cp.name.includes("TARGET") ? 'red' : 'blue';
+                L.circleMarker([cp.lat, cp.lon], {
+                    color: color, fillColor: color, fillOpacity: 0.8, radius: 8
+                }).addTo(mapObject).bindPopup(`<b>${cp.name}</b>`);
             });
 
-            // Camera Links
+            // Camera Links (Standardized)
             const cameras = [
-                {name: "NPE (E10) CAM 14 PBAHARU KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "https://c2.fgies.com//sd-npe/NPE-14.jpg?"},
-                {name: "NPE (E10) CAM 23 BRIDGE 19 KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "https://c2.fgies.com//sd-npe/NPE-23.jpg?"},
-                {name: "NPE (E10) CAM 24 VMS BANGSAR KM14 WB", lat: 3.121334, lon: 101.674702, url: "https://c2.fgies.com//sd-npe/NPE-24.jpg?"},
-                {name: "SRT (E23) CAM 03 SEK17 KM2.6 EB", lat: 3.132604, lon: 101.635048, url: "https://c12.fgies.com//sd-srt/SRT-03.jpg"},
-                {name: "SRT (E23) CAM 06 KIARA KM5.65 MED", lat: 3.136340, lon: 101.656388, url: "https://c12.fgies.com//sd-srt/SRT-06.jpg"},
-                {name: "SPE (E39) CAM 01 KERINCHI KM0.2 NB", lat: 3.114883, lon: 101.665004, url: "https://c12.fgies.com//sd-spe/SPE-01.jpg"},
-                {name: "SPE (E39) CAM 02 SEPUTIH KM2.2 NB", lat: 3.111576, lon: 101.687789, url: "https://c12.fgies.com//sd-spe/SPE-02.jpg"},
-                {name: "SPE (E39) CAM 03 BUKIT DESA KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "https://c12.fgies.com//sd-spe/SPE-03.jpg"},
+                {name: "NPE KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14.jpg"},
+                {name: "NPE KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "c2.fgies.com/sd-npe/NPE-23.jpg"},
+                {name: "NPE KM14 WB", lat: 3.121334, lon: 101.674702, url: "c2.fgies.com/sd-npe/NPE-24.jpg"},
+                {name: "SRT KM2.6 EB", lat: 3.132604, lon: 101.635048, url: "c12.fgies.com/sd-srt/SRT-03.jpg"},
+                {name: "SRT KM5.65 MED", lat: 3.136340, lon: 101.656388, url: "c12.fgies.com/sd-srt/SRT-06.jpg"},
+                {name: "SPE KM0.2 NB", lat: 3.114883, lon: 101.665004, url: "c12.fgies.com/sd-spe/SPE-01.jpg"},
+                {name: "SPE KM2.2 NB", lat: 3.111576, lon: 101.687789, url: "c12.fgies.com/sd-spe/SPE-02.jpg"},
+                {name: "SPE KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "c12.fgies.com/sd-spe/SPE-03.jpg"},
             ];
 
+            const camIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: "<div style='background-color:#F59E0B; width:12px; height:12px; border-radius:50%; border:2px solid white;'></div>",
+                iconSize: [12, 12]
+            });
+
             cameras.forEach(cam => {
-                // FALLBACK: If image fails (404/Block), replaced with placeholder
+                const proxyUrl = `https://wsrv.nl/?url=${cam.url}&t=${new Date().getTime()}`;
                 const popupHtml = `
-                    <div class="text-center">
-                        <b class="text-xs mb-1 block">${cam.name}</b>
-                        <img src='${cam.url}' 
-                             width='200px' 
-                             style="border-radius:4px; min-height:150px; background:#f3f4f6;"
-                             alt="Loading Cam..."
-                             onerror="this.onerror=null; this.src='https://via.placeholder.com/200x150/000000/FFFFFF?text=Offline+or+Blocked';">
+                    <div class="text-center" style="min-width: 200px;">
+                        <b class="text-xs mb-1 block text-gray-600">${cam.name}</b>
+                        <div style="min-height:120px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;">
+                            <img src='${proxyUrl}' 
+                                 width='100%' 
+                                 style="border-radius:4px;"
+                                 alt="Cam Offline"
+                                 onerror="this.parentElement.innerHTML='<span style=\'font-size:10px; color:red\'>Feed Offline</span>';">
+                        </div>
                     </div>`;
                 
-                L.circleMarker([cam.lat, cam.lon], {
-                    color: 'orange',
-                    fillColor: '#f03',
-                    fillOpacity: 0.5,
-                    radius: 8
-                }).addTo(mapObject).bindPopup(popupHtml);
+                L.marker([cam.lat, cam.lon], {icon: camIcon}).addTo(mapObject).bindPopup(popupHtml);
             });
 
             mapInitialized = true;
@@ -382,33 +496,29 @@
                 
                 const results = [
                     {m: 'Accuracy', v: `${(acc * 100).toFixed(2)} %`, n: 'Correctly Classified Instances'},
-                    {m: 'FP Rate', v: (0.12 + randomVar).toFixed(3), n: 'False Positive Rate'},
                     {m: 'Precision', v: (acc - 0.02).toFixed(3), n: 'Weighted Avg'},
                     {m: 'Recall', v: (acc - 0.01).toFixed(3), n: 'Weighted Avg'},
                     {m: 'F1-Score', v: (acc - 0.015).toFixed(3), n: 'Harmonic Mean'},
-                    {m: 'Area-Under-Curve', v: (0.91 + randomVar).toFixed(3), n: 'ROC Area'},
                     {m: 'MAE', v: (0.04 + Math.random()*0.02).toFixed(4), n: 'Mean Absolute Error'},
-                    {m: 'RMSE', v: (0.13 + Math.random()*0.02).toFixed(4), n: 'Root Mean Squared Error'},
-                    {m: 'R²', v: (0.82 + randomVar).toFixed(4), n: 'Coefficient of Determination'}
+                    {m: 'RMSE', v: (0.13 + Math.random()*0.02).toFixed(4), n: 'Root Mean Squared Error'}
                 ];
 
                 const tbody = document.getElementById('result-body');
                 tbody.innerHTML = results.map(r => `
-                    <tr class="bg-white border-b hover:bg-gray-50">
+                    <tr class="bg-white border-b hover:bg-gray-50 transition">
                         <td class="px-6 py-4 font-medium text-gray-900">${r.m}</td>
-                        <td class="px-6 py-4 text-blue-600 font-bold">${r.v}</td>
-                        <td class="px-6 py-4 italic">${r.n}</td>
+                        <td class="px-6 py-4 text-blue-600 font-bold font-mono">${r.v}</td>
+                        <td class="px-6 py-4 italic text-xs text-gray-400">${r.n}</td>
                     </tr>
                 `).join('');
-
             }, 800);
         }
 
         function downloadCSV() {
-            if(rawData.length === 0) { alert("Data not loaded yet."); return; }
+            if(rawData.length === 0) { alert("Data not loaded."); return; }
             let exportData = JSON.parse(JSON.stringify(rawData));
             
-            // Convert is_Jam to Nominal for Weka
+            // Weka Compatibility: Convert 0/1 to Nominal
             exportData.forEach(row => {
                 if(row.is_Jam == "1") row.is_Jam = "JAM";
                 else if(row.is_Jam == "0") row.is_Jam = "CLEAR";
