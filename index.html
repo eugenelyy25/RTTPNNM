@@ -60,6 +60,18 @@
             flex-direction: column;
         }
 
+        /* --- FIX APPLIED: Chart Title Style --- */
+        .chart-title { 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            color: #374151; 
+            margin-bottom: 4px; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            text-align: center; 
+        }
+
         .chart-wrapper {
             flex-grow: 1;
             position: relative;
@@ -202,6 +214,7 @@
         // --- STATE ---
         let rawData = [], organizedData = {}, uniqueDates = [], uniqueRoutes = [];
         let mapInitialized = false, mapObject = null, charts = {}; 
+        let historicalAverages = {}; // Added for prediction logic
 
         window.onload = function() { updateTime(); fetchData(); };
 
@@ -245,14 +258,25 @@
         function processData(data) {
             organizedData = {}; 
             let routeSet = new Set(), dateSet = new Set();
+            let sums = {}; // For prediction averages
 
             data.forEach(row => {
                 const routeKey = `${row.origin_location} -> ${row.destination_location}`;
                 routeSet.add(routeKey);
                 dateSet.add(row.date);
+                
+                const ts = parseInt(row.timestamp);
+                const val = parseInt(row.calculated_journeytime_minute);
+
                 if (!organizedData[row.date]) organizedData[row.date] = {};
                 if (!organizedData[row.date][routeKey]) organizedData[row.date][routeKey] = {};
-                organizedData[row.date][routeKey][parseInt(row.timestamp)] = parseInt(row.calculated_journeytime_minute);
+                organizedData[row.date][routeKey][ts] = val;
+
+                // Accumulate Sums
+                if (!sums[routeKey]) sums[routeKey] = {};
+                if (!sums[routeKey][ts]) sums[routeKey][ts] = { s: 0, c: 0 };
+                sums[routeKey][ts].s += val;
+                sums[routeKey][ts].c += 1;
             });
 
             uniqueRoutes = Array.from(routeSet).sort();
@@ -262,8 +286,20 @@
                 return new Date(`20${yA}`, mA-1, dA) - new Date(`20${yB}`, mB-1, dB);
             });
 
+            // Calculate Averages
+            uniqueRoutes.forEach(r => {
+                historicalAverages[r] = {};
+                TIME_SLOTS.forEach(ts => {
+                    if (sums[r] && sums[r][ts] && sums[r][ts].c > 0) {
+                        historicalAverages[r][ts] = sums[r][ts].s / sums[r][ts].c;
+                    } else {
+                        historicalAverages[r][ts] = 0; 
+                    }
+                });
+            });
+
             generateDateButtons();
-            // Default load Today
+            
             if(uniqueDates.length > 0) {
                 updateCharts('Today'); 
             }
@@ -285,7 +321,6 @@
                 c.innerHTML = '';
                 buttonDefinitions.forEach(def => {
                     const btn = document.createElement('button');
-                    // Style differently for predictions
                     if(def.type.includes('pred')) {
                         btn.className = "pill-btn pill-yellow text-xs whitespace-nowrap border-blue-500";
                     } else {
@@ -320,9 +355,8 @@
                 }
             });
 
-            // Logic for Today's Prediction vs History
-            let targetDate = null;
-            let mode = 'history'; // history, today, prediction
+            let targetDate = uniqueDates[uniqueDates.length - 1];
+            let mode = 'history'; 
             let noiseFactor = 0;
 
             if (label === 'Today') {
@@ -335,28 +369,26 @@
             } else if (label === '3 Days Ago') {
                 targetDate = uniqueDates[uniqueDates.length - 4];
             } else if (label === 'Tomorrow') {
-                targetDate = uniqueDates[uniqueDates.length - 1]; // Base off today
                 mode = 'prediction';
                 noiseFactor = 1.0;
             } else if (label === 'Day After') {
-                targetDate = uniqueDates[uniqueDates.length - 1]; // Base off today
                 mode = 'prediction';
                 noiseFactor = 1.5;
             }
 
-            // Get Current Time Integer for comparison (e.g., 1330)
             const now = new Date();
             const currentHour = now.getHours();
             const currentMin = now.getMinutes() < 30 ? 0 : 30;
             const currentTimeInt = currentHour * 100 + currentMin;
 
+            // --- FIX APPLIED: Chart Generation with Title Class ---
             if (container.children.length !== uniqueRoutes.length) {
                 container.innerHTML = '';
                 uniqueRoutes.forEach((route, index) => {
                     const div = document.createElement('div');
                     div.className = 'graph-card';
                     div.innerHTML = `
-                        <h3 class="font-bold text-xs text-gray-700 truncate mb-1" title="${route}">${route}</h3>
+                        <h3 class="chart-title" title="${route}">${route}</h3>
                         <div class="chart-wrapper"><canvas id="chart-${index}"></canvas></div>
                     `;
                     container.appendChild(div);
@@ -365,48 +397,45 @@
 
             uniqueRoutes.forEach((route, index) => {
                 const ctx = document.getElementById(`chart-${index}`).getContext('2d');
-                
                 let realData = [];
                 let predData = [];
 
                 TIME_SLOTS.forEach(slot => {
                     let baseVal = organizedData[targetDate]?.[route]?.[slot];
-                    
+                    let avgVal = historicalAverages[route][slot]; // Use avg for predictions
+
                     if (mode === 'prediction') {
-                        // Full day prediction
-                        if (baseVal !== undefined) {
-                            predData.push(Math.max(0, baseVal + (Math.random() * 4 - 2) * noiseFactor));
+                        if (avgVal !== undefined && avgVal > 0) {
+                            predData.push(Math.max(0, avgVal + (Math.random() * 4 - 2) * noiseFactor));
                         } else {
                             predData.push(null);
                         }
                         realData.push(null); 
                     } 
                     else if (mode === 'today') {
-                        // Hybrid: Real until now, Prediction after
                         if (slot <= currentTimeInt) {
                             realData.push(baseVal !== undefined ? baseVal : null);
                             predData.push(null);
                         } else {
                             realData.push(null);
-                            if (baseVal !== undefined) {
-                                predData.push(Math.max(0, baseVal + (Math.random() * 4 - 2)));
+                            if (avgVal !== undefined && avgVal > 0) {
+                                predData.push(Math.max(0, avgVal + (Math.random() * 4 - 2)));
                             } else {
                                 predData.push(null);
                             }
                         }
-                    }
+                    } 
                     else {
-                        // History
                         realData.push(baseVal !== undefined ? baseVal : null);
                         predData.push(null);
                     }
                 });
 
-                // Connect the lines visually for Today
                 if (mode === 'today') {
-                    const transitionIdx = TIME_SLOTS.findIndex(t => t === currentTimeInt);
-                    if (transitionIdx !== -1 && realData[transitionIdx] !== null) {
-                        predData[transitionIdx] = realData[transitionIdx];
+                    let lastRealIdx = -1;
+                    for(let k=0; k<realData.length; k++) if(realData[k] !== null) lastRealIdx = k;
+                    if (lastRealIdx !== -1 && lastRealIdx < realData.length - 1) {
+                         predData[lastRealIdx] = realData[lastRealIdx];
                     }
                 }
 
@@ -425,14 +454,14 @@
                                     data: realData,
                                     borderColor: '#3b82f6',
                                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    borderWidth: 2, tension: 0.3, fill: true, pointRadius: 2
+                                    borderWidth: 2, tension: 0.3, fill: true, pointRadius: 2, spanGaps: true
                                 },
                                 {
                                     label: 'Prediction',
                                     data: predData,
                                     borderColor: '#f43f5e',
                                     backgroundColor: 'rgba(244, 63, 94, 0.1)',
-                                    borderWidth: 2, borderDash: [5, 5], tension: 0.3, fill: true, pointRadius: 2
+                                    borderWidth: 2, borderDash: [5, 5], tension: 0.3, fill: true, pointRadius: 2, spanGaps: true
                                 }
                             ]
                         },
@@ -456,7 +485,6 @@
             mapObject = L.map('map').setView([3.1275, 101.6506], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObject);
             
-            // INCREASED PIN SIZE (Radius: 10)
             const points = [
                 {n:"FSKTM (TARGET)", l:[3.127503, 101.650681], c:"red"},
                 {n:"GATE 1 (KL GATE)", l:[3.118774, 101.663074], c:"blue"},
@@ -466,7 +494,6 @@
             ];
             points.forEach(p => L.circleMarker(p.l, {color:p.c, radius:10, fillOpacity:0.8, stroke: true, weight: 2}).addTo(mapObject).bindPopup(`<b>${p.n}</b>`));
 
-            // RESTORED FULL CAMERA LIST
             const cams = [
                 {name: "NPE KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14.jpg"},
                 {name: "NPE KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "c2.fgies.com/sd-npe/NPE-23.jpg"},
