@@ -75,7 +75,7 @@
             width: 180px; 
             height: 80px;
             background: #000;
-            display: block; /* Ensure it's never hidden */
+            display: block; 
         }
 
         #map { height: 100%; width: 100%; border-radius: 8px; z-index: 1; min-height: 500px; }
@@ -201,12 +201,12 @@
 
         // --- STATE ---
         let rawData = [], organizedData = {}, uniqueDates = [], uniqueRoutes = [];
+        let averageProfiles = {}; // Stores avg journey time per route per timeslot
         let mapInitialized = false, mapObject = null, charts = {}; 
 
         window.onload = function() { updateTime(); fetchData(); };
 
         function updateTime() {
-            // Updated Date Format: 12/25/2025, 1:14:09 PM
             document.getElementById('refresh-time').innerText = new Date().toLocaleString('en-US', {
                 year: 'numeric', month: 'numeric', day: 'numeric',
                 hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true
@@ -246,14 +246,25 @@
         function processData(data) {
             organizedData = {}; 
             let routeSet = new Set(), dateSet = new Set();
+            let sums = {}; // { route: { timestamp: {sum, count} } }
 
             data.forEach(row => {
                 const routeKey = `${row.origin_location} -> ${row.destination_location}`;
                 routeSet.add(routeKey);
                 dateSet.add(row.date);
+                
+                const ts = parseInt(row.timestamp);
+                const val = parseInt(row.calculated_journeytime_minute);
+
                 if (!organizedData[row.date]) organizedData[row.date] = {};
                 if (!organizedData[row.date][routeKey]) organizedData[row.date][routeKey] = {};
-                organizedData[row.date][routeKey][parseInt(row.timestamp)] = parseInt(row.calculated_journeytime_minute);
+                organizedData[row.date][routeKey][ts] = val;
+
+                // Accumulate for averages
+                if (!sums[routeKey]) sums[routeKey] = {};
+                if (!sums[routeKey][ts]) sums[routeKey][ts] = { s: 0, c: 0 };
+                sums[routeKey][ts].s += val;
+                sums[routeKey][ts].c += 1;
             });
 
             uniqueRoutes = Array.from(routeSet).sort();
@@ -263,8 +274,19 @@
                 return new Date(`20${yA}`, mA-1, dA) - new Date(`20${yB}`, mB-1, dB);
             });
 
+            // Calculate Average Profiles for Prediction
+            uniqueRoutes.forEach(r => {
+                averageProfiles[r] = {};
+                TIME_SLOTS.forEach(ts => {
+                    if (sums[r] && sums[r][ts] && sums[r][ts].c > 0) {
+                        averageProfiles[r][ts] = sums[r][ts].s / sums[r][ts].c;
+                    } else {
+                        averageProfiles[r][ts] = 10; // Default fallback
+                    }
+                });
+            });
+
             generateDateButtons();
-            // Default load Today
             if(uniqueDates.length > 0) {
                 updateCharts('Today'); 
             }
@@ -274,7 +296,6 @@
             const containers = [document.getElementById('date-buttons'), document.getElementById('date-buttons-mobile')];
             const buttonDefinitions = [
                 { label: '3 Days Ago', offset: 3, type: 'history' },
-                { label: '2 Days Ago', offset: 2, type: 'history' },
                 { label: 'Yesterday', offset: 1, type: 'history' },
                 { label: 'Today', offset: 0, type: 'today' },
                 { label: 'Tomorrow', type: 'pred1' },
@@ -286,7 +307,6 @@
                 c.innerHTML = '';
                 buttonDefinitions.forEach(def => {
                     const btn = document.createElement('button');
-                    // Style differently for predictions
                     if(def.type.includes('pred')) {
                         btn.className = "pill-btn pill-yellow text-xs whitespace-nowrap border-blue-500";
                     } else {
@@ -311,7 +331,6 @@
         function updateCharts(label) {
             const container = document.getElementById('graphs-wrapper');
             
-            // Highlight Button
             document.querySelectorAll('#date-buttons button, #date-buttons-mobile button').forEach(b => {
                 if (b.innerText === label) {
                     b.classList.add('pill-active');
@@ -322,9 +341,8 @@
                 }
             });
 
-            // Logic for Today's Prediction vs History
             let targetDate = null;
-            let mode = 'history'; // history, today, prediction
+            let mode = 'history'; 
             let noiseFactor = 0;
 
             if (label === 'Today') {
@@ -332,21 +350,17 @@
                 mode = 'today';
             } else if (label === 'Yesterday') {
                 targetDate = uniqueDates[uniqueDates.length - 2];
-            } else if (label === '2 Days Ago') {
-                targetDate = uniqueDates[uniqueDates.length - 3];
             } else if (label === '3 Days Ago') {
                 targetDate = uniqueDates[uniqueDates.length - 4];
             } else if (label === 'Tomorrow') {
-                targetDate = uniqueDates[uniqueDates.length - 1]; // Base off today
                 mode = 'prediction';
                 noiseFactor = 1.0;
             } else if (label === 'Day After') {
-                targetDate = uniqueDates[uniqueDates.length - 1]; // Base off today
                 mode = 'prediction';
                 noiseFactor = 1.5;
             }
 
-            // Get Current Time Integer for comparison (e.g., 1330)
+            // Current Time logic (e.g. 1330)
             const now = new Date();
             const currentHour = now.getHours();
             const currentMin = now.getMinutes() < 30 ? 0 : 30;
@@ -368,57 +382,48 @@
             uniqueRoutes.forEach((route, index) => {
                 const ctx = document.getElementById(`chart-${index}`).getContext('2d');
                 
-                // --- BUILD DATASETS ---
-                // For "Today", we want Real data until now, then Prediction after now
-                // For "Prediction", we want Prediction for 0830-2130
-                
                 let realData = [];
                 let predData = [];
 
                 TIME_SLOTS.forEach(slot => {
-                    let baseVal = organizedData[targetDate]?.[route]?.[slot];
+                    // Prediction Base: Use calculated average profile
+                    let avgVal = averageProfiles[route][slot];
                     
                     if (mode === 'prediction') {
-                        // Full day prediction
-                        if (baseVal !== undefined) {
-                            predData.push(Math.max(0, baseVal + (Math.random() * 4 - 2) * noiseFactor));
-                        } else {
-                            predData.push(null);
-                        }
-                        realData.push(null); // No real data shown on prediction tabs
+                        // Full Prediction for Tomorrow/Day After based on Avg
+                        predData.push(Math.max(0, avgVal + (Math.random() * 5 - 2.5) * noiseFactor));
+                        realData.push(null); 
                     } 
                     else if (mode === 'today') {
-                        // Hybrid: Real until now, Prediction after
+                        // Real data from CSV (Latest Date)
+                        let csvVal = organizedData[targetDate]?.[route]?.[slot];
+                        
                         if (slot <= currentTimeInt) {
-                            realData.push(baseVal !== undefined ? baseVal : null);
+                            // PAST: Show Real Data
+                            realData.push(csvVal !== undefined ? csvVal : null);
                             predData.push(null);
                         } else {
-                            // Only predict if we had previous data to base it on
-                            // (Simulated by using today's data + noise)
+                            // FUTURE: Show Prediction based on Avg
                             realData.push(null);
-                            if (baseVal !== undefined) {
-                                predData.push(Math.max(0, baseVal + (Math.random() * 4 - 2)));
-                            } else {
-                                predData.push(null);
-                            }
+                            predData.push(Math.max(0, avgVal + (Math.random() * 3 - 1.5)));
                         }
                     }
                     else {
-                        // History
-                        realData.push(baseVal !== undefined ? baseVal : null);
+                        // Historical Mode
+                        let csvVal = organizedData[targetDate]?.[route]?.[slot];
+                        realData.push(csvVal !== undefined ? csvVal : null);
                         predData.push(null);
                     }
                 });
 
-                // Connect the lines visually for Today (Add last real point to pred array)
+                // Stitch connection for Today
                 if (mode === 'today') {
-                    const transitionIdx = TIME_SLOTS.findIndex(t => t === currentTimeInt);
-                    if (transitionIdx !== -1 && realData[transitionIdx] !== null) {
-                        predData[transitionIdx] = realData[transitionIdx];
+                    const idx = TIME_SLOTS.indexOf(currentTimeInt);
+                    if (idx !== -1 && realData[idx] !== null) {
+                        predData[idx] = realData[idx];
                     }
                 }
 
-                // Chart Update
                 if (charts[route]) {
                     charts[route].data.datasets[0].data = realData;
                     charts[route].data.datasets[1].data = predData;
@@ -430,25 +435,20 @@
                             labels: TIME_LABELS,
                             datasets: [
                                 {
-                                    label: 'History/Real',
+                                    label: 'Real',
                                     data: realData,
-                                    borderColor: '#3b82f6', // Blue
+                                    borderColor: '#3b82f6',
                                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    borderWidth: 2,
-                                    tension: 0.3,
-                                    fill: true,
-                                    pointRadius: 2
+                                    borderWidth: 2, tension: 0.3, fill: true, pointRadius: 2,
+                                    spanGaps: true // FIX: Connects dots over missing data
                                 },
                                 {
                                     label: 'Prediction',
                                     data: predData,
-                                    borderColor: '#f43f5e', // Red
+                                    borderColor: '#f43f5e',
                                     backgroundColor: 'rgba(244, 63, 94, 0.1)',
-                                    borderWidth: 2,
-                                    borderDash: [5, 5], // Dotted line for prediction
-                                    tension: 0.3,
-                                    fill: true,
-                                    pointRadius: 2
+                                    borderWidth: 2, borderDash: [5, 5], tension: 0.3, fill: false, pointRadius: 0,
+                                    spanGaps: true // FIX: Connects dots over missing data
                                 }
                             ]
                         },
@@ -483,21 +483,26 @@
             points.forEach(p => L.circleMarker(p.l, {color:p.c, radius:10, fillOpacity:0.8, stroke: true, weight: 2}).addTo(mapObject).bindPopup(`<b>${p.n}</b>`));
 
             const cams = [
-                {n:"NPE 13.3", l:[3.1166, 101.6719], u:"c2.fgies.com/sd-npe/NPE-14.jpg"},
-                {n:"SRT 2.6", l:[3.1326, 101.6350], u:"c12.fgies.com/sd-srt/SRT-03.jpg"},
-                {n:"SPE 0.2", l:[3.1148, 101.6650], u:"c12.fgies.com/sd-spe/SPE-01.jpg"}
+                {name: "NPE KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14.jpg"},
+                {name: "NPE KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "c2.fgies.com/sd-npe/NPE-23.jpg"},
+                {name: "NPE KM14 WB", lat: 3.121334, lon: 101.674702, url: "c2.fgies.com/sd-npe/NPE-24.jpg"},
+                {name: "SRT KM2.6 EB", lat: 3.132604, lon: 101.635048, url: "c12.fgies.com/sd-srt/SRT-03.jpg"},
+                {name: "SRT KM5.65 MED", lat: 3.136340, lon: 101.656388, url: "c12.fgies.com/sd-srt/SRT-06.jpg"},
+                {name: "SPE KM0.2 NB", lat: 3.114883, lon: 101.665004, url: "c12.fgies.com/sd-spe/SPE-01.jpg"},
+                {name: "SPE KM2.2 NB", lat: 3.111576, lon: 101.687789, url: "c12.fgies.com/sd-spe/SPE-02.jpg"},
+                {name: "SPE KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "c12.fgies.com/sd-spe/SPE-03.jpg"},
             ];
             const icon = L.divIcon({className:'', html:'<div style="background:orange;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px black;"></div>'});
             
             cams.forEach(c => {
-                const url = `https://wsrv.nl/?url=${c.u}&t=${Date.now()}`;
-                // LARGE IMAGE POPUP
+                const url = `https://wsrv.nl/?url=${c.url}&t=${Date.now()}`;
                 const popupContent = `
                     <div class="text-center">
-                        <b class="text-sm mb-1 block">${c.n}</b>
-                        <img src="${url}" style="width:100%; min-width:280px; min-height:180px; background:#eee; display:block; border-radius:4px;">
+                        <b class="text-sm mb-1 block">${c.name}</b>
+                        <img src="${url}" style="width:100%; min-width:280px; min-height:180px; background:#eee; display:block; border-radius:4px;"
+                        onerror="this.parentElement.innerHTML='<span style=\\'color:red\\'>Offline</span>';">
                     </div>`;
-                L.marker(c.l, {icon}).addTo(mapObject).bindPopup(popupContent);
+                L.marker([c.lat, c.lon], {icon}).addTo(mapObject).bindPopup(popupContent);
             });
             mapInitialized = true;
         }
@@ -516,7 +521,6 @@
                 res.classList.remove('hidden');
                 title.innerText = `Results for ${m} [${t}]`;
                 
-                // Simulate realistic values
                 let baseAcc = 0.85;
                 if(m.includes('LSTM')) baseAcc = 0.92;
                 if(m.includes('Forest')) baseAcc = 0.94;
@@ -533,32 +537,4 @@
                     {n: 'FP Rate', v: (0.1 + noise).toFixed(3), note: 'False Positive Instances'},
                     {n: 'Precision', v: p.toFixed(3), note: 'Weighted Avg'},
                     {n: 'Recall', v: r.toFixed(3), note: 'Weighted Avg'},
-                    {n: 'F1-Score', v: f1.toFixed(3), note: 'Harmonic Mean'},
-                    {n: 'Area-Under-Curve', v: (0.9 + noise).toFixed(3), note: 'ROC Area'},
-                    {n: 'MAE', v: (0.04 + Math.abs(noise)).toFixed(4), note: 'Mean Absolute Error'},
-                    {n: 'RMSE', v: (0.12 + Math.abs(noise)).toFixed(4), note: 'Root Mean Squared Error'},
-                    {n: 'R²', v: (0.8 + noise).toFixed(4), note: 'Coefficient of Determination'}
-                ];
-
-                body.innerHTML = metrics.map(row => `
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="px-6 py-4 font-medium text-gray-900 border-r">${row.n}</td>
-                        <td class="px-6 py-4 text-blue-600 font-bold border-r">${row.v}</td>
-                        <td class="px-6 py-4 italic text-gray-500">${row.note}</td>
-                    </tr>
-                `).join('');
-
-            }, 600);
-        }
-
-        function downloadCSV() {
-            if(!rawData.length) return alert("No data");
-            const csv = Papa.unparse(rawData);
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
-            a.download = "traffic_data.csv";
-            a.click();
-        }
-    </script>
-</body>
-</html>
+                    {n: 'F1
