@@ -29,9 +29,9 @@
 
         .pill-btn {
             border-radius: 9999px;
-            padding: 8px 20px;
+            padding: 6px 16px; /* Smaller padding */
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.8rem; /* Smaller font */
             transition: transform 0.1s, box-shadow 0.1s;
             cursor: pointer;
             border: 2px solid #000;
@@ -42,28 +42,34 @@
         .pill-btn:active { transform: scale(0.95); }
         .pill-yellow { background-color: var(--btn-yellow); color: black; }
         .pill-lime { background-color: var(--btn-lime); color: black; }
-        .pill-active { border: 3px solid #1d4ed8; box-shadow: inset 0 0 8px rgba(0,0,0,0.3); }
+        .pill-active { border: 2px solid #1d4ed8; box-shadow: inset 0 0 8px rgba(0,0,0,0.3); }
 
+        /* Compact Grid */
         .graph-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 1.5rem;
-            padding: 1rem;
+            /* Allow smaller columns to fit more on screen (260px min) */
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 0.75rem; /* Tighter gap */
+            padding: 0.5rem;
         }
         .graph-card {
             background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border: 1px solid #e5e7eb;
+            /* Flex layout to control height */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .weather-widget {
             border: 2px solid white;
             border-radius: 10px;
             overflow: hidden;
-            width: 200px;
-            height: 120px;
+            width: 160px; /* Smaller weather widget */
+            height: 90px;
             background: #000;
             flex-shrink: 0;
         }
@@ -76,68 +82,64 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <header class="cyan-pane p-4 flex flex-col lg:flex-row justify-between items-center sticky top-0 z-50 gap-4">
+    <header class="cyan-pane p-3 flex flex-col lg:flex-row justify-between items-center sticky top-0 z-50 gap-3">
         <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">🚦 TrafficPred</h1>
+            <h1 class="text-xl font-extrabold text-slate-800 tracking-tight">🚦 TrafficPred</h1>
             
-            <div class="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto justify-center">
-                <button onclick="switchTab('chart')" id="btn-chart" class="pill-btn pill-yellow pill-active">7-Day Chart</button>
-                <button onclick="switchTab('cctv')" id="btn-cctv" class="pill-btn pill-lime">CCTV Image</button>
-                <button onclick="switchTab('model')" id="btn-model" class="pill-btn pill-yellow">Model Test</button>
+            <div class="flex gap-2 overflow-x-auto pb-1 md:pb-0 w-full md:w-auto justify-center">
+                <button onclick="switchTab('chart')" id="btn-chart" class="pill-btn pill-yellow pill-active">Charts</button>
+                <button onclick="switchTab('cctv')" id="btn-cctv" class="pill-btn pill-lime">CCTV</button>
+                <button onclick="switchTab('model')" id="btn-model" class="pill-btn pill-yellow">Model</button>
             </div>
         </div>
 
         <div class="flex items-center gap-4 hidden md:flex">
             <div class="weather-widget relative shadow-md">
                 <iframe 
-                    width="200" 
-                    height="120" 
-                    src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=200&height=120&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" 
+                    width="160" 
+                    height="90" 
+                    src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=160&height=90&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" 
                     frameborder="0"
                     style="pointer-events:none;"> </iframe>
-                <span class="absolute bottom-1 left-1 text-[10px] text-white font-bold bg-black bg-opacity-60 px-2 py-0.5 rounded">Sat: UM Area</span>
+                <span class="absolute bottom-0 left-0 text-[9px] text-white font-bold bg-black bg-opacity-60 px-1 w-full text-center">UM Area</span>
             </div>
             
-            <div class="text-right text-xs font-mono bg-white bg-opacity-60 p-2 rounded border border-gray-300">
-                <div class="text-gray-600">Last Refresh:</div>
+            <div class="text-right text-[10px] font-mono bg-white bg-opacity-60 p-1 rounded border border-gray-300">
+                <div class="text-gray-600">Updated:</div>
                 <div id="refresh-time" class="font-bold text-gray-900">Loading...</div>
             </div>
         </div>
     </header>
 
-    <main class="flex-grow p-4 md:p-6">
+    <main class="flex-grow p-2 md:p-4 bg-gray-50">
         
         <div id="tab-chart" class="block animate-fade-in">
-            <div class="flex flex-wrap gap-2 justify-center mb-6" id="date-buttons">
+            <div class="flex flex-wrap gap-1 justify-center mb-4" id="date-buttons">
                 <button class="pill-btn pill-lime text-xs opacity-50 cursor-not-allowed">Loading Dates...</button>
             </div>
 
             <div id="graphs-wrapper" class="graph-container">
-                <p class="text-center w-full mt-10 text-gray-500 animate-pulse">Loading Traffic Data...</p>
+                <p class="text-center w-full mt-10 text-gray-500 animate-pulse text-sm">Loading Traffic Data...</p>
             </div>
         </div>
 
         <div id="tab-cctv" class="hidden">
-            <div class="bg-white p-2 md:p-4 rounded-xl shadow-lg border border-gray-200">
-                <div class="flex justify-between items-center mb-4 px-2">
-                    <h2 class="text-lg md:text-xl font-bold text-gray-800">Live Traffic Monitoring</h2>
-                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-bold">Live Feed</span>
-                </div>
+            <div class="bg-white p-2 rounded-xl shadow border border-gray-200 h-full">
                 <div id="map"></div>
             </div>
         </div>
 
         <div id="tab-model" class="hidden container mx-auto max-w-5xl">
             <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Model Performance Analysis (WEKA)</h2>
+                <h2 class="text-xl font-bold mb-6 text-gray-800 border-b pb-2">Model Performance (WEKA)</h2>
                 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                     <button onclick="runModelTest('LSTM', 'CV-10')" class="pill-btn pill-lime text-xs hover:bg-green-400">LSTM (CV-10)</button>
                     <button onclick="runModelTest('LSTM', '80-20')" class="pill-btn pill-lime text-xs hover:bg-green-400">LSTM (80-20)</button>
-                    <button onclick="runModelTest('RF', 'CV-10')" class="pill-btn pill-lime text-xs hover:bg-green-400">Random Forest (CV-10)</button>
-                    <button onclick="runModelTest('RF', '80-20')" class="pill-btn pill-lime text-xs hover:bg-green-400">Random Forest (80-20)</button>
-                    <button onclick="runModelTest('LR', 'CV-10')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">Logistic Reg (CV-10)</button>
-                    <button onclick="runModelTest('LR', '80-20')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">Logistic Reg (80-20)</button>
+                    <button onclick="runModelTest('RF', 'CV-10')" class="pill-btn pill-lime text-xs hover:bg-green-400">RF (CV-10)</button>
+                    <button onclick="runModelTest('RF', '80-20')" class="pill-btn pill-lime text-xs hover:bg-green-400">RF (80-20)</button>
+                    <button onclick="runModelTest('LR', 'CV-10')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">LogReg (CV-10)</button>
+                    <button onclick="runModelTest('LR', '80-20')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">LogReg (80-20)</button>
                     <button onclick="runModelTest('KNN', 'CV-10')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">KNN (CV-10)</button>
                     <button onclick="runModelTest('KNN', '80-20')" class="pill-btn pill-yellow text-xs hover:bg-yellow-300">KNN (80-20)</button>
                 </div>
@@ -162,8 +164,8 @@
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p class="text-xs text-gray-400 italic">Data exported from WEKA environment. 'is_Jam' class converted to Nominal.</p>
-                    <button onclick="downloadCSV()" class="pill-btn pill-lime w-full md:w-auto shadow-md">Download traffic_data.csv</button>
+                    <p class="text-xs text-gray-400 italic">Data exported from WEKA. 'is_Jam' converted to Nominal.</p>
+                    <button onclick="downloadCSV()" class="pill-btn pill-lime w-full md:w-auto shadow-md">Download CSV</button>
                 </div>
             </div>
         </div>
@@ -174,14 +176,13 @@
         // --- CONFIGURATION ---
         const REPO_CSV_URL = './traffic_data.csv';
         
-        // State
         let rawData = [];
-        let organizedData = {}; // { date_string: { route_key: [ {time, val} ] } }
+        let organizedData = {}; 
         let uniqueDates = [];
         let uniqueRoutes = [];
         let mapInitialized = false;
         let mapObject = null;
-        let charts = {}; // Store chart instances to update them
+        let charts = {}; 
 
         // --- INIT ---
         window.onload = function() {
@@ -191,7 +192,7 @@
 
         function updateTime() {
             const now = new Date();
-            document.getElementById('refresh-time').innerText = now.toLocaleString('en-MY', { hour12: true });
+            document.getElementById('refresh-time').innerText = now.toLocaleString('en-MY', { hour12: true, hour: '2-digit', minute:'2-digit' });
         }
 
         // --- TAB SWITCHING ---
@@ -209,24 +210,17 @@
             }
         }
 
-        // --- DATA FETCHING & PROCESSING ---
+        // --- DATA FETCHING ---
         function fetchData() {
             Papa.parse(REPO_CSV_URL, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
+                download: true, header: true, skipEmptyLines: true,
                 complete: function(results) {
                     if (results.data && results.data.length > 0) {
                         rawData = results.data;
                         processData(rawData);
-                    } else {
-                        showError("CSV is empty.");
-                    }
+                    } else { showError("CSV is empty."); }
                 },
-                error: function(err) {
-                    console.error("CSV Error:", err);
-                    showError(`Failed to load traffic_data.csv. Make sure the file is in the same folder.`);
-                }
+                error: function(err) { showError(`Failed to load CSV.`); }
             });
         }
 
@@ -236,109 +230,79 @@
             let dateSet = new Set();
 
             data.forEach(row => {
-                // Key for route: Origin -> Dest
                 const routeKey = `${row.origin_location} -> ${row.destination_location}`;
                 routeSet.add(routeKey);
-                
-                // Key for date: using the 'date' column directly (e.g., 16.12.25)
                 const dateKey = row.date;
                 dateSet.add(dateKey);
 
                 if (!organizedData[dateKey]) organizedData[dateKey] = {};
                 if (!organizedData[dateKey][routeKey]) organizedData[dateKey][routeKey] = [];
 
-                // Store time and value
-                // time format in csv is int (930, 2130). We keep it for sorting.
                 organizedData[dateKey][routeKey].push({
                     rawTime: parseInt(row.timestamp),
                     val: parseInt(row.calculated_journeytime_minute)
                 });
             });
 
-            // Convert Sets to Arrays and Sort
             uniqueRoutes = Array.from(routeSet);
-            // Sort dates assuming DD.MM.YY format
             uniqueDates = Array.from(dateSet).sort((a, b) => {
-                const partsA = a.split('.');
-                const partsB = b.split('.');
-                // new Date(year, monthIndex, day)
-                const dateA = new Date(`20${partsA[2]}`, partsA[1]-1, partsA[0]);
-                const dateB = new Date(`20${partsB[2]}`, partsB[1]-1, partsB[0]);
-                return dateA - dateB;
+                const partsA = a.split('.'); const partsB = b.split('.');
+                return new Date(`20${partsA[2]}`, partsA[1]-1, partsA[0]) - new Date(`20${partsB[2]}`, partsB[1]-1, partsB[0]);
             });
 
-            console.log("Unique Routes:", uniqueRoutes.length);
-            console.log("Unique Dates:", uniqueDates);
-
             generateDateButtons();
-            // Default to the latest date available
-            if(uniqueDates.length > 0) {
-                updateCharts(uniqueDates[uniqueDates.length - 1]);
-            }
+            if(uniqueDates.length > 0) updateCharts(uniqueDates[uniqueDates.length - 1]);
         }
 
         function generateDateButtons() {
             const btnContainer = document.getElementById('date-buttons');
             btnContainer.innerHTML = '';
-
-            // We only show up to 5 most recent dates found in CSV
             const recentDates = uniqueDates.slice(-5);
-
             recentDates.forEach(date => {
                 const btn = document.createElement('button');
-                btn.className = "pill-btn pill-lime text-xs mx-1";
+                btn.className = "pill-btn pill-lime text-xs mx-1 mb-1";
                 btn.innerText = date;
                 btn.onclick = () => updateCharts(date);
                 btnContainer.appendChild(btn);
             });
-
-            // Add a "Pred" button just for UI completeness (simulated)
             const predBtn = document.createElement('button');
-            predBtn.className = "pill-btn pill-yellow text-xs mx-1";
-            predBtn.innerText = "Prediction (Next)";
+            predBtn.className = "pill-btn pill-yellow text-xs mx-1 mb-1";
+            predBtn.innerText = "Prediction";
             predBtn.onclick = () => updateCharts('PREDICTION');
             btnContainer.appendChild(predBtn);
         }
 
         function formatTime(timeInt) {
-            // Converts 930 -> 09:30, 2130 -> 21:30
             let s = timeInt.toString();
             while(s.length < 4) s = "0" + s;
             return s.substring(0, 2) + ":" + s.substring(2);
         }
 
         function showError(msg) {
-            document.getElementById('graphs-wrapper').innerHTML = `
-                <div class="col-span-full text-center p-10 bg-red-50 text-red-700 rounded-lg border border-red-200">
-                    <h3 class="font-bold text-lg">⚠️ Data Loading Error</h3>
-                    <p>${msg}</p>
-                </div>`;
+            document.getElementById('graphs-wrapper').innerHTML = `<p class="col-span-full text-center text-red-500">${msg}</p>`;
         }
 
         // --- CHARTS LOGIC ---
         function updateCharts(selectedDate) {
             const container = document.getElementById('graphs-wrapper');
-            
-            // Highlight selected button
-            const buttons = document.getElementById('date-buttons').querySelectorAll('button');
-            buttons.forEach(b => {
-                if(b.innerText === selectedDate || (selectedDate === 'PREDICTION' && b.innerText.includes('Prediction'))) {
-                    b.classList.add('ring-2', 'ring-blue-500', 'font-bold');
-                } else {
-                    b.classList.remove('ring-2', 'ring-blue-500', 'font-bold');
-                }
+            const btns = document.getElementById('date-buttons').querySelectorAll('button');
+            btns.forEach(b => {
+                b.classList.remove('ring-2', 'ring-blue-500', 'font-bold');
+                if(b.innerText === selectedDate || (selectedDate==='PREDICTION' && b.innerText==='Prediction')) b.classList.add('ring-2', 'ring-blue-500', 'font-bold');
             });
 
-            // If charts don't exist yet, create containers
             if (Object.keys(charts).length === 0) {
                 container.innerHTML = ''; 
                 uniqueRoutes.forEach((route, index) => {
                     const canvasId = `chart-${index}`;
                     const div = document.createElement('div');
                     div.className = 'graph-card';
+                    // FIXED HEIGHT CONTAINER: 100px for canvas
                     div.innerHTML = `
-                        <h3 class="font-bold text-xs mb-2 text-center text-gray-500 h-8 flex items-center justify-center overflow-hidden leading-tight">${route}</h3>
-                        <canvas id="${canvasId}" height="200"></canvas>
+                        <h3 class="font-bold text-[10px] text-center text-gray-500 mb-1 truncate leading-tight" title="${route}">${route}</h3>
+                        <div style="height: 100px; position: relative; width: 100%;">
+                            <canvas id="${canvasId}"></canvas>
+                        </div>
                     `;
                     container.appendChild(div);
                 });
@@ -350,39 +314,29 @@
                 const canvasId = `chart-${index}`;
                 const ctx = document.getElementById(canvasId).getContext('2d');
                 
-                // Prepare Data
                 let labels = [];
                 let dataPoints = [];
 
                 if (isPrediction) {
-                    // Simulation: Use the last real date's data + small noise
                     const lastDate = uniqueDates[uniqueDates.length - 1];
                     const dayData = organizedData[lastDate][route] || [];
-                    
-                    // Sort by time
                     dayData.sort((a,b) => a.rawTime - b.rawTime);
-                    
                     labels = dayData.map(d => formatTime(d.rawTime));
-                    dataPoints = dayData.map(d => Math.max(0, d.val + (Math.random() * 4 - 2))); // Add noise
+                    dataPoints = dayData.map(d => Math.max(0, d.val + (Math.random() * 4 - 2)));
                 } else {
                     const dayData = organizedData[selectedDate] ? (organizedData[selectedDate][route] || []) : [];
-                    
-                    // Sort by time
                     dayData.sort((a,b) => a.rawTime - b.rawTime);
-                    
                     labels = dayData.map(d => formatTime(d.rawTime));
                     dataPoints = dayData.map(d => d.val);
                 }
 
-                // Config
                 const lineColor = isPrediction ? 'rgb(255, 99, 132)' : 'rgb(54, 162, 235)';
                 const bgFill = isPrediction ? 'rgba(255, 99, 132, 0.1)' : 'rgba(54, 162, 235, 0.1)';
 
-                // Update or Create Chart
                 if (charts[route]) {
                     charts[route].data.labels = labels;
                     charts[route].data.datasets[0].data = dataPoints;
-                    charts[route].data.datasets[0].label = isPrediction ? "Predicted Time (min)" : "Journey Time (min)";
+                    charts[route].data.datasets[0].label = isPrediction ? "Pred (min)" : "Time (min)";
                     charts[route].data.datasets[0].borderColor = lineColor;
                     charts[route].data.datasets[0].backgroundColor = bgFill;
                     charts[route].update();
@@ -392,25 +346,26 @@
                         data: {
                             labels: labels,
                             datasets: [{
-                                label: "Journey Time (min)",
+                                label: "Time (min)",
                                 data: dataPoints,
                                 borderColor: lineColor,
                                 backgroundColor: bgFill,
                                 tension: 0.3,
                                 fill: true,
-                                pointRadius: 3,
-                                pointHoverRadius: 5
+                                pointRadius: 2,
+                                pointHoverRadius: 4,
+                                borderWidth: 2
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: false,
+                            maintainAspectRatio: false, // CRITICAL for custom height
                             interaction: { intersect: false, mode: 'index' },
                             scales: { 
-                                y: { beginAtZero: true, title: {display: true, text: 'Mins'} },
-                                x: { grid: { display: false } }
+                                y: { beginAtZero: true, ticks: { font: {size: 9} } },
+                                x: { grid: { display: false }, ticks: { maxTicksLimit: 6, font: {size: 9} } }
                             },
-                            plugins: { legend: { display: false } }
+                            plugins: { legend: { display: false }, tooltip: { titleFont: {size:10}, bodyFont: {size:10} } }
                         }
                     });
                 }
@@ -420,29 +375,19 @@
         // --- MAP LOGIC ---
         function initMap() {
             if (mapInitialized) return;
-            
             mapObject = L.map('map').setView([3.127503, 101.650681], 13);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(mapObject);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(mapObject);
 
             const checkpoints = [
-                {name: "FSKTM (TARGET)", lat: 3.127503, lon: 101.650681},
-                {name: "GATE 1 (KL GATE)", lat: 3.118774, lon: 101.663074},
-                {name: "GATE 2 (PJ GATE)", lat: 3.115642, lon: 101.650832},
-                {name: "GATE 3 (MAHSA GATE)", lat: 3.118839, lon: 101.651122},
-                {name: "GATE 4 (DAMANSARA GATE)", lat: 3.137486, lon: 101.658259},
+                {name: "FSKTM (TARGET)", lat: 3.127503, lon: 101.650681}, {name: "GATE 1 (KL)", lat: 3.118774, lon: 101.663074},
+                {name: "GATE 2 (PJ)", lat: 3.115642, lon: 101.650832}, {name: "GATE 3 (MAHSA)", lat: 3.118839, lon: 101.651122},
+                {name: "GATE 4 (DAMANSARA)", lat: 3.137486, lon: 101.658259},
             ];
-
             checkpoints.forEach(cp => {
                 const color = cp.name.includes("TARGET") ? 'red' : 'blue';
-                L.circleMarker([cp.lat, cp.lon], {
-                    color: color, fillColor: color, fillOpacity: 0.8, radius: 8
-                }).addTo(mapObject).bindPopup(`<b>${cp.name}</b>`);
+                L.circleMarker([cp.lat, cp.lon], {color: color, fillColor: color, fillOpacity: 0.8, radius: 6}).addTo(mapObject).bindPopup(`<b>${cp.name}</b>`);
             });
 
-            // Camera Links (Standardized)
             const cameras = [
                 {name: "NPE KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14.jpg"},
                 {name: "NPE KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "c2.fgies.com/sd-npe/NPE-23.jpg"},
@@ -453,87 +398,40 @@
                 {name: "SPE KM2.2 NB", lat: 3.111576, lon: 101.687789, url: "c12.fgies.com/sd-spe/SPE-02.jpg"},
                 {name: "SPE KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "c12.fgies.com/sd-spe/SPE-03.jpg"},
             ];
-
-            const camIcon = L.divIcon({
-                className: 'custom-div-icon',
-                html: "<div style='background-color:#F59E0B; width:12px; height:12px; border-radius:50%; border:2px solid white;'></div>",
-                iconSize: [12, 12]
-            });
-
+            const camIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#F59E0B; width:10px; height:10px; border-radius:50%; border:1px solid white;'></div>", iconSize: [10, 10] });
             cameras.forEach(cam => {
                 const proxyUrl = `https://wsrv.nl/?url=${cam.url}&t=${new Date().getTime()}`;
-                const popupHtml = `
-                    <div class="text-center" style="min-width: 200px;">
-                        <b class="text-xs mb-1 block text-gray-600">${cam.name}</b>
-                        <div style="min-height:120px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;">
-                            <img src='${proxyUrl}' 
-                                 width='100%' 
-                                 style="border-radius:4px;"
-                                 alt="Cam Offline"
-                                 onerror="this.parentElement.innerHTML='<span style=\'font-size:10px; color:red\'>Feed Offline</span>';">
-                        </div>
-                    </div>`;
-                
-                L.marker([cam.lat, cam.lon], {icon: camIcon}).addTo(mapObject).bindPopup(popupHtml);
+                L.marker([cam.lat, cam.lon], {icon: camIcon}).addTo(mapObject).bindPopup(`<div class="text-center"><b class="text-xs mb-1 block">${cam.name}</b><img src='${proxyUrl}' width='200px' style="border-radius:4px;" onerror="this.parentElement.innerHTML='Offline'"></div>`);
             });
-
             mapInitialized = true;
         }
 
-        // --- MODEL TEST LOGIC (Simulation) ---
+        // --- MODEL SIMULATION ---
         function runModelTest(model, type) {
             document.getElementById('model-results').classList.add('hidden');
             document.getElementById('model-loader').style.display = 'block';
-            
             setTimeout(() => {
                 document.getElementById('model-loader').style.display = 'none';
                 document.getElementById('model-results').classList.remove('hidden');
-                document.getElementById('result-title').innerText = `Results for ${model} [${type}]`;
-
-                const baseAcc = model === 'LSTM' ? 0.88 : (model === 'RF' ? 0.92 : 0.79);
-                const randomVar = (Math.random() * 0.04) - 0.02;
-                const acc = (baseAcc + randomVar).toFixed(4);
-                
+                document.getElementById('result-title').innerText = `Results: ${model} [${type}]`;
+                const acc = (model === 'LSTM' ? 0.88 : (model === 'RF' ? 0.92 : 0.79)) + (Math.random() * 0.04 - 0.02);
                 const results = [
-                    {m: 'Accuracy', v: `${(acc * 100).toFixed(2)} %`, n: 'Correctly Classified Instances'},
-                    {m: 'Precision', v: (acc - 0.02).toFixed(3), n: 'Weighted Avg'},
-                    {m: 'Recall', v: (acc - 0.01).toFixed(3), n: 'Weighted Avg'},
-                    {m: 'F1-Score', v: (acc - 0.015).toFixed(3), n: 'Harmonic Mean'},
-                    {m: 'MAE', v: (0.04 + Math.random()*0.02).toFixed(4), n: 'Mean Absolute Error'},
-                    {m: 'RMSE', v: (0.13 + Math.random()*0.02).toFixed(4), n: 'Root Mean Squared Error'}
+                    {m: 'Accuracy', v: `${(acc * 100).toFixed(2)} %`}, {m: 'Precision', v: (acc - 0.02).toFixed(3)},
+                    {m: 'Recall', v: (acc - 0.01).toFixed(3)}, {m: 'F1-Score', v: (acc - 0.015).toFixed(3)},
                 ];
-
-                const tbody = document.getElementById('result-body');
-                tbody.innerHTML = results.map(r => `
-                    <tr class="bg-white border-b hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 font-medium text-gray-900">${r.m}</td>
-                        <td class="px-6 py-4 text-blue-600 font-bold font-mono">${r.v}</td>
-                        <td class="px-6 py-4 italic text-xs text-gray-400">${r.n}</td>
-                    </tr>
-                `).join('');
-            }, 800);
+                document.getElementById('result-body').innerHTML = results.map(r => `<tr class="bg-white border-b"><td class="px-4 py-2 text-xs font-medium">${r.m}</td><td class="px-4 py-2 text-xs text-blue-600 font-bold">${r.v}</td><td class="px-4 py-2 text-[10px] text-gray-400">...</td></tr>`).join('');
+            }, 600);
         }
 
         function downloadCSV() {
             if(rawData.length === 0) { alert("Data not loaded."); return; }
             let exportData = JSON.parse(JSON.stringify(rawData));
-            
-            // Weka Compatibility: Convert 0/1 to Nominal
-            exportData.forEach(row => {
-                if(row.is_Jam == "1") row.is_Jam = "JAM";
-                else if(row.is_Jam == "0") row.is_Jam = "CLEAR";
-            });
-
+            exportData.forEach(row => { row.is_Jam = row.is_Jam == "1" ? "JAM" : "CLEAR"; });
             const csv = Papa.unparse(exportData);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "traffic_data_nominal.csv");
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
+            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+            link.download = "traffic_data_nominal.csv";
             link.click();
-            document.body.removeChild(link);
         }
     </script>
 </body>
