@@ -75,7 +75,7 @@
             width: 180px; 
             height: 80px;
             background: #000;
-            display: block; /* Ensure it's never hidden */
+            display: block; 
         }
 
         #map { height: 100%; width: 100%; border-radius: 8px; z-index: 1; min-height: 500px; }
@@ -206,7 +206,6 @@
         window.onload = function() { updateTime(); fetchData(); };
 
         function updateTime() {
-            // Updated Date Format: 12/25/2025, 1:14:09 PM
             document.getElementById('refresh-time').innerText = new Date().toLocaleString('en-US', {
                 year: 'numeric', month: 'numeric', day: 'numeric',
                 hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true
@@ -311,7 +310,6 @@
         function updateCharts(label) {
             const container = document.getElementById('graphs-wrapper');
             
-            // Highlight Button
             document.querySelectorAll('#date-buttons button, #date-buttons-mobile button').forEach(b => {
                 if (b.innerText === label) {
                     b.classList.add('pill-active');
@@ -368,10 +366,6 @@
             uniqueRoutes.forEach((route, index) => {
                 const ctx = document.getElementById(`chart-${index}`).getContext('2d');
                 
-                // --- BUILD DATASETS ---
-                // For "Today", we want Real data until now, then Prediction after now
-                // For "Prediction", we want Prediction for 0830-2130
-                
                 let realData = [];
                 let predData = [];
 
@@ -385,7 +379,7 @@
                         } else {
                             predData.push(null);
                         }
-                        realData.push(null); // No real data shown on prediction tabs
+                        realData.push(null); 
                     } 
                     else if (mode === 'today') {
                         // Hybrid: Real until now, Prediction after
@@ -393,8 +387,6 @@
                             realData.push(baseVal !== undefined ? baseVal : null);
                             predData.push(null);
                         } else {
-                            // Only predict if we had previous data to base it on
-                            // (Simulated by using today's data + noise)
                             realData.push(null);
                             if (baseVal !== undefined) {
                                 predData.push(Math.max(0, baseVal + (Math.random() * 4 - 2)));
@@ -410,7 +402,7 @@
                     }
                 });
 
-                // Connect the lines visually for Today (Add last real point to pred array)
+                // Connect the lines visually for Today
                 if (mode === 'today') {
                     const transitionIdx = TIME_SLOTS.findIndex(t => t === currentTimeInt);
                     if (transitionIdx !== -1 && realData[transitionIdx] !== null) {
@@ -418,7 +410,6 @@
                     }
                 }
 
-                // Chart Update
                 if (charts[route]) {
                     charts[route].data.datasets[0].data = realData;
                     charts[route].data.datasets[1].data = predData;
@@ -430,25 +421,18 @@
                             labels: TIME_LABELS,
                             datasets: [
                                 {
-                                    label: 'History/Real',
+                                    label: 'Real',
                                     data: realData,
-                                    borderColor: '#3b82f6', // Blue
+                                    borderColor: '#3b82f6',
                                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    borderWidth: 2,
-                                    tension: 0.3,
-                                    fill: true,
-                                    pointRadius: 2
+                                    borderWidth: 2, tension: 0.3, fill: true, pointRadius: 2
                                 },
                                 {
                                     label: 'Prediction',
                                     data: predData,
-                                    borderColor: '#f43f5e', // Red
+                                    borderColor: '#f43f5e',
                                     backgroundColor: 'rgba(244, 63, 94, 0.1)',
-                                    borderWidth: 2,
-                                    borderDash: [5, 5], // Dotted line for prediction
-                                    tension: 0.3,
-                                    fill: true,
-                                    pointRadius: 2
+                                    borderWidth: 2, borderDash: [5, 5], tension: 0.3, fill: true, pointRadius: 2
                                 }
                             ]
                         },
@@ -482,22 +466,28 @@
             ];
             points.forEach(p => L.circleMarker(p.l, {color:p.c, radius:10, fillOpacity:0.8, stroke: true, weight: 2}).addTo(mapObject).bindPopup(`<b>${p.n}</b>`));
 
+            // RESTORED FULL CAMERA LIST
             const cams = [
-                {n:"NPE 13.3", l:[3.1166, 101.6719], u:"c2.fgies.com/sd-npe/NPE-14.jpg"},
-                {n:"SRT 2.6", l:[3.1326, 101.6350], u:"c12.fgies.com/sd-srt/SRT-03.jpg"},
-                {n:"SPE 0.2", l:[3.1148, 101.6650], u:"c12.fgies.com/sd-spe/SPE-01.jpg"}
+                {name: "NPE KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14.jpg"},
+                {name: "NPE KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "c2.fgies.com/sd-npe/NPE-23.jpg"},
+                {name: "NPE KM14 WB", lat: 3.121334, lon: 101.674702, url: "c2.fgies.com/sd-npe/NPE-24.jpg"},
+                {name: "SRT KM2.6 EB", lat: 3.132604, lon: 101.635048, url: "c12.fgies.com/sd-srt/SRT-03.jpg"},
+                {name: "SRT KM5.65 MED", lat: 3.136340, lon: 101.656388, url: "c12.fgies.com/sd-srt/SRT-06.jpg"},
+                {name: "SPE KM0.2 NB", lat: 3.114883, lon: 101.665004, url: "c12.fgies.com/sd-spe/SPE-01.jpg"},
+                {name: "SPE KM2.2 NB", lat: 3.111576, lon: 101.687789, url: "c12.fgies.com/sd-spe/SPE-02.jpg"},
+                {name: "SPE KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "c12.fgies.com/sd-spe/SPE-03.jpg"},
             ];
             const icon = L.divIcon({className:'', html:'<div style="background:orange;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px black;"></div>'});
             
             cams.forEach(c => {
-                const url = `https://wsrv.nl/?url=${c.u}&t=${Date.now()}`;
-                // LARGE IMAGE POPUP
+                const url = `https://wsrv.nl/?url=${c.url}&t=${Date.now()}`;
                 const popupContent = `
                     <div class="text-center">
-                        <b class="text-sm mb-1 block">${c.n}</b>
-                        <img src="${url}" style="width:100%; min-width:280px; min-height:180px; background:#eee; display:block; border-radius:4px;">
+                        <b class="text-sm mb-1 block">${c.name}</b>
+                        <img src="${url}" style="width:100%; min-width:280px; min-height:180px; background:#eee; display:block; border-radius:4px;"
+                        onerror="this.parentElement.innerHTML='<span style=\\'color:red\\'>Offline</span>';">
                     </div>`;
-                L.marker(c.l, {icon}).addTo(mapObject).bindPopup(popupContent);
+                L.marker([c.lat, c.lon], {icon}).addTo(mapObject).bindPopup(popupContent);
             });
             mapInitialized = true;
         }
@@ -516,7 +506,6 @@
                 res.classList.remove('hidden');
                 title.innerText = `Results for ${m} [${t}]`;
                 
-                // Simulate realistic values
                 let baseAcc = 0.85;
                 if(m.includes('LSTM')) baseAcc = 0.92;
                 if(m.includes('Forest')) baseAcc = 0.94;
