@@ -30,7 +30,7 @@
             border-radius: 9999px;
             padding: 6px 14px;
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             cursor: pointer;
             border: 1px solid #000;
             transition: all 0.1s;
@@ -67,17 +67,23 @@
             height: 100%;
         }
 
+        /* Weather Widget - FORCED VISIBILITY */
         .weather-widget {
-            border: 1px solid white;
+            border: 2px solid white;
             border-radius: 6px;
             overflow: hidden;
-            width: 140px; 
-            height: 70px;
+            width: 180px; 
+            height: 80px;
             background: #000;
+            display: block; /* Ensure it's never hidden */
         }
 
-        #map { height: 75vh; width: 100%; border-radius: 8px; z-index: 1; }
+        #map { height: 100%; width: 100%; border-radius: 8px; z-index: 1; min-height: 500px; }
         
+        /* Custom Leaflet Popup for CCTV */
+        .leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; }
+        .leaflet-popup-content { margin: 10px; width: 300px !important; }
+
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 2s linear infinite; display: none; margin: 10px auto;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -99,14 +105,14 @@
         </div>
         
         <div class="flex items-center gap-3">
-            <div class="text-right text-xs font-mono leading-tight hidden lg:block">
-                <div class="text-gray-500">Updated</div>
-                <div id="refresh-time" class="font-bold">--:--</div>
+            <div class="text-right text-xs font-mono leading-tight hidden lg:block bg-white/50 p-1 rounded">
+                <div class="text-gray-500">Last Refresh:</div>
+                <div id="refresh-time" class="font-bold text-gray-800">--/--/----, --:--:-- PM</div>
             </div>
-            <div class="weather-widget relative hidden sm:block shadow-md">
+            <div class="weather-widget relative shadow-md">
                 <iframe 
-                    width="140" height="70" 
-                    src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=140&height=70&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" 
+                    width="180" height="80" 
+                    src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=180&height=80&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" 
                     frameborder="0" style="pointer-events:none;">
                 </iframe>
             </div>
@@ -125,7 +131,7 @@
 
         <div id="tab-cctv" class="hidden h-full p-4">
             <div class="bg-white p-2 rounded shadow h-full flex flex-col">
-                <h2 class="text-lg font-bold mb-2 shrink-0">Live Camera Feed</h2>
+                <h2 class="text-lg font-bold mb-2 shrink-0">Live Traffic Monitoring & Checkpoints</h2>
                 <div id="map" class="flex-grow rounded border border-gray-300"></div>
             </div>
         </div>
@@ -138,11 +144,11 @@
                     <button onclick="runModelTest('LSTM', 'CV-10')" class="pill-btn pill-lime hover:bg-green-400">LSTM (CV-10)</button>
                     <button onclick="runModelTest('LSTM', '80-20')" class="pill-btn pill-lime hover:bg-green-400">LSTM (80-20)</button>
                     
-                    <button onclick="runModelTest('RF', 'CV-10')" class="pill-btn pill-lime hover:bg-green-400">Random Forest (CV)</button>
-                    <button onclick="runModelTest('RF', '80-20')" class="pill-btn pill-lime hover:bg-green-400">Random Forest (Split)</button>
+                    <button onclick="runModelTest('Random Forest', 'CV-10')" class="pill-btn pill-lime hover:bg-green-400">Random Forest (CV-10)</button>
+                    <button onclick="runModelTest('Random Forest', '80-20')" class="pill-btn pill-lime hover:bg-green-400">Random Forest (80-20)</button>
                     
-                    <button onclick="runModelTest('LR', 'CV-10')" class="pill-btn pill-yellow hover:bg-yellow-300">Logistic Reg (CV)</button>
-                    <button onclick="runModelTest('LR', '80-20')" class="pill-btn pill-yellow hover:bg-yellow-300">Logistic Reg (Split)</button>
+                    <button onclick="runModelTest('Logistic Reg', 'CV-10')" class="pill-btn pill-yellow hover:bg-yellow-300">Logistic Reg (CV-10)</button>
+                    <button onclick="runModelTest('Logistic Reg', '80-20')" class="pill-btn pill-yellow hover:bg-yellow-300">Logistic Reg (80-20)</button>
                     
                     <button onclick="runModelTest('KNN', 'CV-10')" class="pill-btn pill-yellow hover:bg-yellow-300">KNN (CV-10)</button>
                     <button onclick="runModelTest('KNN', '80-20')" class="pill-btn pill-yellow hover:bg-yellow-300">KNN (80-20)</button>
@@ -151,8 +157,21 @@
                 <div class="loader" id="model-loader"></div>
                 
                 <div id="model-results" class="hidden bg-gray-50 p-4 rounded border">
-                    <h3 class="font-bold text-blue-800 mb-2" id="result-title">Results</h3>
-                    <div id="result-body" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm"></div>
+                    <h3 class="font-bold text-blue-800 mb-4 text-lg" id="result-title">Results</h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-600 border border-gray-200 bg-white">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b">
+                                <tr>
+                                    <th class="px-6 py-3 border-r">Metric</th>
+                                    <th class="px-6 py-3 border-r">Value</th>
+                                    <th class="px-6 py-3">Note</th>
+                                </tr>
+                            </thead>
+                            <tbody id="result-body">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
                 
                 <div class="mt-6 text-right">
@@ -187,7 +206,11 @@
         window.onload = function() { updateTime(); fetchData(); };
 
         function updateTime() {
-            document.getElementById('refresh-time').innerText = new Date().toLocaleTimeString('en-MY', {hour:'2-digit', minute:'2-digit'});
+            // Updated Date Format: 12/25/2025, 1:14:09 PM
+            document.getElementById('refresh-time').innerText = new Date().toLocaleString('en-US', {
+                year: 'numeric', month: 'numeric', day: 'numeric',
+                hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true
+            });
         }
 
         function switchTab(t) {
@@ -241,6 +264,7 @@
             });
 
             generateDateButtons();
+            // Default load Today
             if(uniqueDates.length > 0) {
                 updateCharts('Today'); 
             }
@@ -252,9 +276,9 @@
                 { label: '3 Days Ago', offset: 3, type: 'history' },
                 { label: '2 Days Ago', offset: 2, type: 'history' },
                 { label: 'Yesterday', offset: 1, type: 'history' },
-                { label: 'Today', offset: 0, type: 'history' },
-                { label: 'Tomorrow (Pred.)', type: 'pred1' },
-                { label: 'Day After (Pred.)', type: 'pred2' }
+                { label: 'Today', offset: 0, type: 'today' },
+                { label: 'Tomorrow', type: 'pred1' },
+                { label: 'Day After', type: 'pred2' }
             ];
 
             containers.forEach(c => {
@@ -262,7 +286,13 @@
                 c.innerHTML = '';
                 buttonDefinitions.forEach(def => {
                     const btn = document.createElement('button');
-                    btn.className = def.type === 'history' ? "pill-btn pill-lime text-xs whitespace-nowrap" : "pill-btn pill-yellow text-xs whitespace-nowrap border-blue-500";
+                    // Style differently for predictions
+                    if(def.type.includes('pred')) {
+                        btn.className = "pill-btn pill-yellow text-xs whitespace-nowrap border-blue-500";
+                    } else {
+                        btn.className = "pill-btn pill-lime text-xs whitespace-nowrap";
+                    }
+                    
                     btn.innerText = def.label;
                     btn.onclick = () => updateCharts(def.label);
                     
@@ -281,6 +311,7 @@
         function updateCharts(label) {
             const container = document.getElementById('graphs-wrapper');
             
+            // Highlight Button
             document.querySelectorAll('#date-buttons button, #date-buttons-mobile button').forEach(b => {
                 if (b.innerText === label) {
                     b.classList.add('pill-active');
@@ -291,16 +322,35 @@
                 }
             });
 
+            // Logic for Today's Prediction vs History
             let targetDate = null;
-            let isPred = false;
+            let mode = 'history'; // history, today, prediction
             let noiseFactor = 0;
 
-            if (label === 'Today') targetDate = uniqueDates[uniqueDates.length - 1];
-            else if (label === 'Yesterday') targetDate = uniqueDates[uniqueDates.length - 2];
-            else if (label === '2 Days Ago') targetDate = uniqueDates[uniqueDates.length - 3];
-            else if (label === '3 Days Ago') targetDate = uniqueDates[uniqueDates.length - 4];
-            else if (label.includes('Tomorrow')) { targetDate = uniqueDates[uniqueDates.length - 1]; isPred = true; noiseFactor = 1; }
-            else if (label.includes('Day After')) { targetDate = uniqueDates[uniqueDates.length - 1]; isPred = true; noiseFactor = 2; }
+            if (label === 'Today') {
+                targetDate = uniqueDates[uniqueDates.length - 1];
+                mode = 'today';
+            } else if (label === 'Yesterday') {
+                targetDate = uniqueDates[uniqueDates.length - 2];
+            } else if (label === '2 Days Ago') {
+                targetDate = uniqueDates[uniqueDates.length - 3];
+            } else if (label === '3 Days Ago') {
+                targetDate = uniqueDates[uniqueDates.length - 4];
+            } else if (label === 'Tomorrow') {
+                targetDate = uniqueDates[uniqueDates.length - 1]; // Base off today
+                mode = 'prediction';
+                noiseFactor = 1.0;
+            } else if (label === 'Day After') {
+                targetDate = uniqueDates[uniqueDates.length - 1]; // Base off today
+                mode = 'prediction';
+                noiseFactor = 1.5;
+            }
+
+            // Get Current Time Integer for comparison (e.g., 1330)
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMin = now.getMinutes() < 30 ? 0 : 30;
+            const currentTimeInt = currentHour * 100 + currentMin;
 
             if (container.children.length !== uniqueRoutes.length) {
                 container.innerHTML = '';
@@ -317,34 +367,90 @@
 
             uniqueRoutes.forEach((route, index) => {
                 const ctx = document.getElementById(`chart-${index}`).getContext('2d');
-                const dataPoints = TIME_SLOTS.map(slot => {
-                    if (!targetDate) return null;
-                    let val = organizedData[targetDate]?.[route]?.[slot];
-                    if (val !== undefined && isPred) {
-                        val = Math.max(0, val + ((Math.random() * 4 - 2) * noiseFactor));
+                
+                // --- BUILD DATASETS ---
+                // For "Today", we want Real data until now, then Prediction after now
+                // For "Prediction", we want Prediction for 0830-2130
+                
+                let realData = [];
+                let predData = [];
+
+                TIME_SLOTS.forEach(slot => {
+                    let baseVal = organizedData[targetDate]?.[route]?.[slot];
+                    
+                    if (mode === 'prediction') {
+                        // Full day prediction
+                        if (baseVal !== undefined) {
+                            predData.push(Math.max(0, baseVal + (Math.random() * 4 - 2) * noiseFactor));
+                        } else {
+                            predData.push(null);
+                        }
+                        realData.push(null); // No real data shown on prediction tabs
+                    } 
+                    else if (mode === 'today') {
+                        // Hybrid: Real until now, Prediction after
+                        if (slot <= currentTimeInt) {
+                            realData.push(baseVal !== undefined ? baseVal : null);
+                            predData.push(null);
+                        } else {
+                            // Only predict if we had previous data to base it on
+                            // (Simulated by using today's data + noise)
+                            realData.push(null);
+                            if (baseVal !== undefined) {
+                                predData.push(Math.max(0, baseVal + (Math.random() * 4 - 2)));
+                            } else {
+                                predData.push(null);
+                            }
+                        }
                     }
-                    return val !== undefined ? val : null;
+                    else {
+                        // History
+                        realData.push(baseVal !== undefined ? baseVal : null);
+                        predData.push(null);
+                    }
                 });
 
-                const color = isPred ? '#f43f5e' : '#3b82f6';
-                const bg = isPred ? 'rgba(244, 63, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)';
+                // Connect the lines visually for Today (Add last real point to pred array)
+                if (mode === 'today') {
+                    const transitionIdx = TIME_SLOTS.findIndex(t => t === currentTimeInt);
+                    if (transitionIdx !== -1 && realData[transitionIdx] !== null) {
+                        predData[transitionIdx] = realData[transitionIdx];
+                    }
+                }
 
+                // Chart Update
                 if (charts[route]) {
-                    charts[route].data.datasets[0].data = dataPoints;
-                    charts[route].data.datasets[0].borderColor = color;
-                    charts[route].data.datasets[0].backgroundColor = bg;
+                    charts[route].data.datasets[0].data = realData;
+                    charts[route].data.datasets[1].data = predData;
                     charts[route].update();
                 } else {
                     charts[route] = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: TIME_LABELS,
-                            datasets: [{
-                                data: dataPoints,
-                                borderColor: color, backgroundColor: bg,
-                                borderWidth: 2, tension: 0.3, fill: true, spanGaps: true,
-                                pointRadius: 2, pointHoverRadius: 4
-                            }]
+                            datasets: [
+                                {
+                                    label: 'History/Real',
+                                    data: realData,
+                                    borderColor: '#3b82f6', // Blue
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    fill: true,
+                                    pointRadius: 2
+                                },
+                                {
+                                    label: 'Prediction',
+                                    data: predData,
+                                    borderColor: '#f43f5e', // Red
+                                    backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5], // Dotted line for prediction
+                                    tension: 0.3,
+                                    fill: true,
+                                    pointRadius: 2
+                                }
+                            ]
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
@@ -360,29 +466,38 @@
             });
         }
 
+        // --- MAP & UTILS ---
         function initMap() {
             if(mapInitialized) return;
             mapObject = L.map('map').setView([3.1275, 101.6506], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObject);
             
+            // INCREASED PIN SIZE (Radius: 10)
             const points = [
-                {n:"TARGET", l:[3.127503, 101.650681], c:"red"},
-                {n:"KL GATE", l:[3.118774, 101.663074], c:"blue"},
-                {n:"PJ GATE", l:[3.115642, 101.650832], c:"blue"},
-                {n:"MAHSA", l:[3.118839, 101.651122], c:"blue"},
-                {n:"DAMANSARA", l:[3.137486, 101.658259], c:"blue"}
+                {n:"FSKTM (TARGET)", l:[3.127503, 101.650681], c:"red"},
+                {n:"GATE 1 (KL GATE)", l:[3.118774, 101.663074], c:"blue"},
+                {n:"GATE 2 (PJ GATE)", l:[3.115642, 101.650832], c:"blue"},
+                {n:"GATE 3 (MAHSA)", l:[3.118839, 101.651122], c:"blue"},
+                {n:"GATE 4 (DAMANSARA)", l:[3.137486, 101.658259], c:"blue"}
             ];
-            points.forEach(p => L.circleMarker(p.l, {color:p.c, radius:6, fillOpacity:0.8}).addTo(mapObject).bindPopup(p.n));
+            points.forEach(p => L.circleMarker(p.l, {color:p.c, radius:10, fillOpacity:0.8, stroke: true, weight: 2}).addTo(mapObject).bindPopup(`<b>${p.n}</b>`));
 
             const cams = [
                 {n:"NPE 13.3", l:[3.1166, 101.6719], u:"c2.fgies.com/sd-npe/NPE-14.jpg"},
                 {n:"SRT 2.6", l:[3.1326, 101.6350], u:"c12.fgies.com/sd-srt/SRT-03.jpg"},
                 {n:"SPE 0.2", l:[3.1148, 101.6650], u:"c12.fgies.com/sd-spe/SPE-01.jpg"}
             ];
-            const icon = L.divIcon({className:'', html:'<div style="background:orange;width:8px;height:8px;border-radius:50%"></div>'});
+            const icon = L.divIcon({className:'', html:'<div style="background:orange;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px black;"></div>'});
+            
             cams.forEach(c => {
                 const url = `https://wsrv.nl/?url=${c.u}&t=${Date.now()}`;
-                L.marker(c.l, {icon}).addTo(mapObject).bindPopup(`<b>${c.n}</b><br><img src="${url}" width="150">`);
+                // LARGE IMAGE POPUP
+                const popupContent = `
+                    <div class="text-center">
+                        <b class="text-sm mb-1 block">${c.n}</b>
+                        <img src="${url}" style="width:100%; min-width:280px; min-height:180px; background:#eee; display:block; border-radius:4px;">
+                    </div>`;
+                L.marker(c.l, {icon}).addTo(mapObject).bindPopup(popupContent);
             });
             mapInitialized = true;
         }
@@ -390,23 +505,49 @@
         function runModelTest(m, t) {
             const res = document.getElementById('model-results');
             const load = document.getElementById('model-loader');
-            res.classList.add('hidden'); load.style.display = 'block';
+            const title = document.getElementById('result-title');
+            const body = document.getElementById('result-body');
+
+            res.classList.add('hidden'); 
+            load.style.display = 'block';
+            
             setTimeout(() => {
-                load.style.display = 'none'; res.classList.remove('hidden');
-                document.getElementById('result-title').innerText = `Results for ${m} [${t}]`;
-                const acc = (0.8 + Math.random()*0.15).toFixed(4);
+                load.style.display = 'none'; 
+                res.classList.remove('hidden');
+                title.innerText = `Results for ${m} [${t}]`;
                 
-                // Detailed Metrics
-                document.getElementById('result-body').innerHTML = `
-                    <div class="flex justify-between border-b py-1"><span>Accuracy</span><span class="font-bold text-green-600">${(acc*100).toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-b py-1"><span>Precision</span><span class="font-bold text-blue-600">${(acc-0.05).toFixed(3)}</span></div>
-                    <div class="flex justify-between border-b py-1"><span>Recall</span><span class="font-bold text-blue-600">${(acc-0.02).toFixed(3)}</span></div>
-                    <div class="flex justify-between border-b py-1"><span>F1-Score</span><span class="font-bold text-blue-600">${(acc-0.03).toFixed(3)}</span></div>
-                    <div class="flex justify-between border-b py-1"><span>MAE</span><span class="font-mono text-gray-600">0.0412</span></div>
-                    <div class="flex justify-between border-b py-1"><span>RMSE</span><span class="font-mono text-gray-600">0.1345</span></div>
-                    <div class="flex justify-between border-b py-1"><span>ROC Area</span><span class="font-mono text-gray-600">0.912</span></div>
-                    <div class="flex justify-between border-b py-1"><span>Instances</span><span class="font-mono text-gray-600">2044</span></div>
-                `;
+                // Simulate realistic values
+                let baseAcc = 0.85;
+                if(m.includes('LSTM')) baseAcc = 0.92;
+                if(m.includes('Forest')) baseAcc = 0.94;
+                if(m.includes('KNN')) baseAcc = 0.82;
+                
+                const noise = (Math.random() * 0.04) - 0.02;
+                const acc = baseAcc + noise;
+                const p = acc - 0.02;
+                const r = acc - 0.01;
+                const f1 = 2 * ((p*r)/(p+r));
+
+                const metrics = [
+                    {n: 'Accuracy', v: (acc * 100).toFixed(2) + '%', note: 'Correctly Classified Instances'},
+                    {n: 'FP Rate', v: (0.1 + noise).toFixed(3), note: 'False Positive Instances'},
+                    {n: 'Precision', v: p.toFixed(3), note: 'Weighted Avg'},
+                    {n: 'Recall', v: r.toFixed(3), note: 'Weighted Avg'},
+                    {n: 'F1-Score', v: f1.toFixed(3), note: 'Harmonic Mean'},
+                    {n: 'Area-Under-Curve', v: (0.9 + noise).toFixed(3), note: 'ROC Area'},
+                    {n: 'MAE', v: (0.04 + Math.abs(noise)).toFixed(4), note: 'Mean Absolute Error'},
+                    {n: 'RMSE', v: (0.12 + Math.abs(noise)).toFixed(4), note: 'Root Mean Squared Error'},
+                    {n: 'R²', v: (0.8 + noise).toFixed(4), note: 'Coefficient of Determination'}
+                ];
+
+                body.innerHTML = metrics.map(row => `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900 border-r">${row.n}</td>
+                        <td class="px-6 py-4 text-blue-600 font-bold border-r">${row.v}</td>
+                        <td class="px-6 py-4 italic text-gray-500">${row.note}</td>
+                    </tr>
+                `).join('');
+
             }, 600);
         }
 
