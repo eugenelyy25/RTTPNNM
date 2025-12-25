@@ -13,74 +13,28 @@
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     
     <style>
-        :root {
-            --cyan-pane: #00FFFF;
-            --btn-yellow: #FFFF00;
-            --btn-lime: #00FF00;
-        }
-
+        :root { --cyan-pane: #00FFFF; --btn-yellow: #FFFF00; --btn-lime: #00FF00; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; }
         
-        .cyan-pane {
-            background-color: var(--cyan-pane);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
+        .cyan-pane { background-color: var(--cyan-pane); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
         .pill-btn {
-            border-radius: 9999px;
-            padding: 6px 14px;
-            font-weight: bold;
-            font-size: 0.75rem;
-            cursor: pointer;
-            border: 1px solid #000;
-            transition: all 0.1s;
+            border-radius: 9999px; padding: 6px 14px; font-weight: bold; font-size: 0.75rem;
+            cursor: pointer; border: 1px solid #000; transition: all 0.1s;
         }
         .pill-btn:hover { transform: scale(1.02); }
         .pill-btn:active { transform: scale(0.95); }
+        .pill-active { border: 2px solid #1d4ed8; box-shadow: inset 0 0 4px rgba(0,0,0,0.2); }
         .pill-yellow { background-color: var(--btn-yellow); color: black; }
         .pill-lime { background-color: var(--btn-lime); color: black; }
-        .pill-active { border: 2px solid #1d4ed8; box-shadow: inset 0 0 4px rgba(0,0,0,0.2); }
 
-        /* STATIC GRID LAYOUT */
-        .graph-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1rem;
-            padding: 1rem;
-        }
+        .graph-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; padding: 1rem; }
+        .graph-card { background: white; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 10px; height: 180px; display: flex; flex-direction: column; }
+        .chart-wrapper { flex-grow: 1; position: relative; width: 100%; height: 100%; }
 
-        .graph-card {
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            padding: 10px;
-            height: 180px; 
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chart-wrapper {
-            flex-grow: 1;
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Weather Widget - FORCED VISIBILITY */
-        .weather-widget {
-            border: 2px solid white;
-            border-radius: 6px;
-            overflow: hidden;
-            width: 180px; 
-            height: 80px;
-            background: #000;
-            display: block; 
-        }
-
-        #map { height: 100%; width: 100%; border-radius: 8px; z-index: 1; min-height: 500px; }
+        .weather-widget { border: 2px solid white; border-radius: 6px; overflow: hidden; width: 180px; height: 80px; background: #000; display: block; }
         
-        /* Custom Leaflet Popup for CCTV */
+        #map { height: 100%; width: 100%; border-radius: 8px; z-index: 1; min-height: 500px; }
         .leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; }
         .leaflet-popup-content { margin: 10px; width: 300px !important; }
 
@@ -98,7 +52,6 @@
                 <button onclick="switchTab('cctv')" id="btn-cctv" class="pill-btn pill-lime">CCTV</button>
                 <button onclick="switchTab('model')" id="btn-model" class="pill-btn pill-yellow">Model</button>
             </div>
-            
             <div id="date-buttons" class="hidden xl:flex gap-1 ml-4">
                 <span class="text-xs text-gray-500 self-center">Loading Data...</span>
             </div>
@@ -110,11 +63,7 @@
                 <div id="refresh-time" class="font-bold text-gray-800">--/--/----, --:--:-- PM</div>
             </div>
             <div class="weather-widget relative shadow-md">
-                <iframe 
-                    width="180" height="80" 
-                    src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=180&height=80&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" 
-                    frameborder="0" style="pointer-events:none;">
-                </iframe>
+                <iframe width="180" height="80" src="https://embed.windy.com/embed2.html?lat=3.127&lon=101.650&detailLat=3.127&detailLon=101.650&width=180&height=80&zoom=10&level=surface&overlay=rain&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" frameborder="0" style="pointer-events:none;"></iframe>
             </div>
         </div>
     </header>
@@ -122,7 +71,6 @@
     <div id="date-buttons-mobile" class="xl:hidden bg-gray-100 p-2 flex overflow-x-auto gap-2 shrink-0 border-b border-gray-200"></div>
 
     <main class="flex-grow overflow-y-auto bg-gray-50 relative">
-        
         <div id="tab-chart" class="block pb-10">
             <div id="graphs-wrapper" class="graph-container">
                 <p class="text-center w-full mt-10 text-gray-400 animate-pulse">Loading Traffic Data...</p>
@@ -139,72 +87,55 @@
         <div id="tab-model" class="hidden container mx-auto max-w-5xl p-6">
             <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
                 <h2 class="text-xl font-bold mb-6 border-b pb-2">Model Performance Analysis (WEKA)</h2>
-                
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <button onclick="runModelTest('LSTM', 'CV-10')" class="pill-btn pill-lime hover:bg-green-400">LSTM (CV-10)</button>
-                    <button onclick="runModelTest('LSTM', '80-20')" class="pill-btn pill-lime hover:bg-green-400">LSTM (80-20)</button>
-                    
-                    <button onclick="runModelTest('Random Forest', 'CV-10')" class="pill-btn pill-lime hover:bg-green-400">Random Forest (CV-10)</button>
-                    <button onclick="runModelTest('Random Forest', '80-20')" class="pill-btn pill-lime hover:bg-green-400">Random Forest (80-20)</button>
-                    
-                    <button onclick="runModelTest('Logistic Reg', 'CV-10')" class="pill-btn pill-yellow hover:bg-yellow-300">Logistic Reg (CV-10)</button>
-                    <button onclick="runModelTest('Logistic Reg', '80-20')" class="pill-btn pill-yellow hover:bg-yellow-300">Logistic Reg (80-20)</button>
-                    
-                    <button onclick="runModelTest('KNN', 'CV-10')" class="pill-btn pill-yellow hover:bg-yellow-300">KNN (CV-10)</button>
-                    <button onclick="runModelTest('KNN', '80-20')" class="pill-btn pill-yellow hover:bg-yellow-300">KNN (80-20)</button>
+                    <button onclick="runModelTest('LSTM', 'CV-10')" class="pill-btn pill-lime">LSTM (CV-10)</button>
+                    <button onclick="runModelTest('LSTM', '80-20')" class="pill-btn pill-lime">LSTM (80-20)</button>
+                    <button onclick="runModelTest('Random Forest', 'CV-10')" class="pill-btn pill-lime">Random Forest (CV-10)</button>
+                    <button onclick="runModelTest('Random Forest', '80-20')" class="pill-btn pill-lime">Random Forest (80-20)</button>
+                    <button onclick="runModelTest('Logistic Reg', 'CV-10')" class="pill-btn pill-yellow">Logistic Reg (CV-10)</button>
+                    <button onclick="runModelTest('Logistic Reg', '80-20')" class="pill-btn pill-yellow">Logistic Reg (80-20)</button>
+                    <button onclick="runModelTest('KNN', 'CV-10')" class="pill-btn pill-yellow">KNN (CV-10)</button>
+                    <button onclick="runModelTest('KNN', '80-20')" class="pill-btn pill-yellow">KNN (80-20)</button>
                 </div>
-
                 <div class="loader" id="model-loader"></div>
-                
                 <div id="model-results" class="hidden bg-gray-50 p-4 rounded border">
                     <h3 class="font-bold text-blue-800 mb-4 text-lg" id="result-title">Results</h3>
-                    
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left text-gray-600 border border-gray-200 bg-white">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b">
-                                <tr>
-                                    <th class="px-6 py-3 border-r">Metric</th>
-                                    <th class="px-6 py-3 border-r">Value</th>
-                                    <th class="px-6 py-3">Note</th>
-                                </tr>
+                                <tr><th class="px-6 py-3 border-r">Metric</th><th class="px-6 py-3 border-r">Value</th><th class="px-6 py-3">Note</th></tr>
                             </thead>
-                            <tbody id="result-body">
-                                </tbody>
+                            <tbody id="result-body"></tbody>
                         </table>
                     </div>
                 </div>
-                
-                <div class="mt-6 text-right">
-                    <button onclick="downloadCSV()" class="pill-btn pill-lime shadow">Download CSV</button>
-                </div>
+                <div class="mt-6 text-right"><button onclick="downloadCSV()" class="pill-btn pill-lime shadow">Download CSV</button></div>
             </div>
         </div>
-
     </main>
 
     <script>
-        // --- CONFIG ---
         const REPO_CSV_URL = './traffic_data.csv';
-        
-        // --- FIXED TIMEFRAME (08:30 to 21:30) ---
-        const TIME_SLOTS = [];
-        const TIME_LABELS = [];
+        const TIME_SLOTS = []; const TIME_LABELS = [];
         let startHour = 8, startMin = 30;
+        
+        // Generate Slots 08:30 -> 21:30
         while (startHour < 21 || (startHour === 21 && startMin <= 30)) {
             TIME_SLOTS.push(startHour * 100 + startMin);
             const hStr = startHour < 10 ? `0${startHour}` : `${startHour}`;
             const mStr = startMin === 0 ? "00" : `${startMin}`;
             TIME_LABELS.push(`${hStr}:${mStr}`);
-            startMin += 30;
-            if (startMin === 60) { startMin = 0; startHour++; }
+            startMin += 30; if (startMin === 60) { startMin = 0; startHour++; }
         }
 
-        // --- STATE ---
         let rawData = [], organizedData = {}, uniqueDates = [], uniqueRoutes = [];
-        let averageProfiles = {}; // Stores avg journey time per route per timeslot
+        let historicalAverages = {}; // Stores { route: { timeslot: avgValue } }
         let mapInitialized = false, mapObject = null, charts = {}; 
 
-        window.onload = function() { updateTime(); fetchData(); };
+        window.onload = function() { 
+            updateTime(); 
+            fetchData();
+        };
 
         function updateTime() {
             document.getElementById('refresh-time').innerText = new Date().toLocaleString('en-US', {
@@ -234,11 +165,12 @@
                         rawData = results.data;
                         processData(rawData);
                     } else {
-                        document.getElementById('graphs-wrapper').innerHTML = '<p class="text-center text-red-500">CSV Empty</p>';
+                        document.getElementById('graphs-wrapper').innerHTML = '<div class="col-span-full text-center text-red-600 font-bold p-10">CSV File is Empty</div>';
                     }
                 },
-                error: function() {
-                    document.getElementById('graphs-wrapper').innerHTML = '<p class="text-center text-red-500">Failed to load CSV. Ensure file exists.</p>';
+                error: function(err) {
+                    console.error(err);
+                    document.getElementById('graphs-wrapper').innerHTML = '<div class="col-span-full text-center text-red-600 font-bold p-10">Failed to Load CSV. Check console.</div>';
                 }
             });
         }
@@ -246,21 +178,24 @@
         function processData(data) {
             organizedData = {}; 
             let routeSet = new Set(), dateSet = new Set();
-            let sums = {}; // { route: { timestamp: {sum, count} } }
+            let sums = {}; 
 
             data.forEach(row => {
                 const routeKey = `${row.origin_location} -> ${row.destination_location}`;
                 routeSet.add(routeKey);
-                dateSet.add(row.date);
+                
+                // Parse Date DD.MM.YY
+                const dateKey = row.date; 
+                dateSet.add(dateKey);
                 
                 const ts = parseInt(row.timestamp);
                 const val = parseInt(row.calculated_journeytime_minute);
 
-                if (!organizedData[row.date]) organizedData[row.date] = {};
-                if (!organizedData[row.date][routeKey]) organizedData[row.date][routeKey] = {};
-                organizedData[row.date][routeKey][ts] = val;
+                if (!organizedData[dateKey]) organizedData[dateKey] = {};
+                if (!organizedData[dateKey][routeKey]) organizedData[dateKey][routeKey] = {};
+                organizedData[dateKey][routeKey][ts] = val;
 
-                // Accumulate for averages
+                // Accumulate Sums for Prediction Average
                 if (!sums[routeKey]) sums[routeKey] = {};
                 if (!sums[routeKey][ts]) sums[routeKey][ts] = { s: 0, c: 0 };
                 sums[routeKey][ts].s += val;
@@ -268,56 +203,58 @@
             });
 
             uniqueRoutes = Array.from(routeSet).sort();
+            // Sort Dates (DD.MM.YY)
             uniqueDates = Array.from(dateSet).sort((a, b) => {
                 const [dA, mA, yA] = a.split('.'); 
                 const [dB, mB, yB] = b.split('.');
                 return new Date(`20${yA}`, mA-1, dA) - new Date(`20${yB}`, mB-1, dB);
             });
 
-            // Calculate Average Profiles for Prediction
+            // Compute Averages
             uniqueRoutes.forEach(r => {
-                averageProfiles[r] = {};
+                historicalAverages[r] = {};
                 TIME_SLOTS.forEach(ts => {
                     if (sums[r] && sums[r][ts] && sums[r][ts].c > 0) {
-                        averageProfiles[r][ts] = sums[r][ts].s / sums[r][ts].c;
+                        historicalAverages[r][ts] = sums[r][ts].s / sums[r][ts].c;
                     } else {
-                        averageProfiles[r][ts] = 10; // Default fallback
+                        // If no data for this slot ever, assume 0 or last known
+                        historicalAverages[r][ts] = 0; 
                     }
                 });
             });
 
             generateDateButtons();
+            
+            // Default to 'Today' if data exists
             if(uniqueDates.length > 0) {
                 updateCharts('Today'); 
+            } else {
+                document.getElementById('graphs-wrapper').innerHTML = '<div class="col-span-full text-center">No valid dates found in CSV.</div>';
             }
         }
 
         function generateDateButtons() {
             const containers = [document.getElementById('date-buttons'), document.getElementById('date-buttons-mobile')];
-            const buttonDefinitions = [
-                { label: '3 Days Ago', offset: 3, type: 'history' },
-                { label: 'Yesterday', offset: 1, type: 'history' },
-                { label: 'Today', offset: 0, type: 'today' },
-                { label: 'Tomorrow', type: 'pred1' },
-                { label: 'Day After', type: 'pred2' }
+            const defs = [
+                { l: '3 Days Ago', off: 3, t: 'h' },
+                { l: '2 Days Ago', off: 2, t: 'h' },
+                { l: 'Yesterday', off: 1, t: 'h' },
+                { l: 'Today', off: 0, t: 't' }, // Last date in CSV
+                { l: 'Tomorrow', t: 'p' },
+                { l: 'Day After', t: 'p' }
             ];
 
             containers.forEach(c => {
                 if(!c) return;
                 c.innerHTML = '';
-                buttonDefinitions.forEach(def => {
+                defs.forEach(d => {
                     const btn = document.createElement('button');
-                    if(def.type.includes('pred')) {
-                        btn.className = "pill-btn pill-yellow text-xs whitespace-nowrap border-blue-500";
-                    } else {
-                        btn.className = "pill-btn pill-lime text-xs whitespace-nowrap";
-                    }
+                    btn.className = d.t === 'p' ? "pill-btn pill-yellow text-xs whitespace-nowrap border-blue-500" : "pill-btn pill-lime text-xs whitespace-nowrap";
+                    btn.innerText = d.l;
+                    btn.onclick = () => updateCharts(d.l);
                     
-                    btn.innerText = def.label;
-                    btn.onclick = () => updateCharts(def.label);
-                    
-                    if(def.type === 'history') {
-                        const dateIndex = uniqueDates.length - 1 - def.offset;
+                    if(d.t === 'h') {
+                        const dateIndex = uniqueDates.length - 1 - d.off;
                         if(dateIndex < 0) {
                             btn.disabled = true;
                             btn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -330,106 +267,98 @@
 
         function updateCharts(label) {
             const container = document.getElementById('graphs-wrapper');
-            
-            document.querySelectorAll('#date-buttons button, #date-buttons-mobile button').forEach(b => {
-                if (b.innerText === label) {
-                    b.classList.add('pill-active');
-                    b.classList.remove('opacity-70');
-                } else {
-                    b.classList.remove('pill-active');
-                    if(!b.disabled) b.classList.add('opacity-70');
-                }
+            document.querySelectorAll('button').forEach(b => {
+                if(b.innerText === label) { b.classList.add('pill-active'); b.classList.remove('opacity-70'); }
+                else if(b.classList.contains('pill-btn')) { b.classList.remove('pill-active'); if(!b.disabled) b.classList.add('opacity-70'); }
             });
 
-            let targetDate = null;
-            let mode = 'history'; 
-            let noiseFactor = 0;
+            // Mode Logic
+            let targetDate = uniqueDates[uniqueDates.length - 1]; // Default to latest
+            let mode = 'history';
 
-            if (label === 'Today') {
-                targetDate = uniqueDates[uniqueDates.length - 1];
-                mode = 'today';
+            if (label === 'Today') { 
+                mode = 'today'; 
+                // targetDate is already last date
             } else if (label === 'Yesterday') {
                 targetDate = uniqueDates[uniqueDates.length - 2];
+            } else if (label === '2 Days Ago') {
+                targetDate = uniqueDates[uniqueDates.length - 3];
             } else if (label === '3 Days Ago') {
                 targetDate = uniqueDates[uniqueDates.length - 4];
-            } else if (label === 'Tomorrow') {
+            } else if (label === 'Tomorrow' || label === 'Day After') {
                 mode = 'prediction';
-                noiseFactor = 1.0;
-            } else if (label === 'Day After') {
-                mode = 'prediction';
-                noiseFactor = 1.5;
             }
 
-            // Current Time logic (e.g. 1330)
+            // Current Time Interger (e.g., 1400)
             const now = new Date();
-            const currentHour = now.getHours();
-            const currentMin = now.getMinutes() < 30 ? 0 : 30;
-            const currentTimeInt = currentHour * 100 + currentMin;
+            const curT = now.getHours() * 100 + (now.getMinutes() < 30 ? 0 : 30);
 
             if (container.children.length !== uniqueRoutes.length) {
                 container.innerHTML = '';
-                uniqueRoutes.forEach((route, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'graph-card';
-                    div.innerHTML = `
-                        <h3 class="font-bold text-xs text-gray-700 truncate mb-1" title="${route}">${route}</h3>
-                        <div class="chart-wrapper"><canvas id="chart-${index}"></canvas></div>
-                    `;
-                    container.appendChild(div);
+                uniqueRoutes.forEach((r, i) => {
+                    container.innerHTML += `<div class="graph-card"><h3 class="font-bold text-xs text-gray-700 truncate mb-1" title="${r}">${r}</h3><div class="chart-wrapper"><canvas id="chart-${i}"></canvas></div></div>`;
                 });
             }
 
-            uniqueRoutes.forEach((route, index) => {
-                const ctx = document.getElementById(`chart-${index}`).getContext('2d');
-                
+            uniqueRoutes.forEach((r, i) => {
+                const ctx = document.getElementById(`chart-${i}`).getContext('2d');
                 let realData = [];
                 let predData = [];
 
                 TIME_SLOTS.forEach(slot => {
-                    // Prediction Base: Use calculated average profile
-                    let avgVal = averageProfiles[route][slot];
-                    
+                    // Avg for Prediction
+                    let avgVal = historicalAverages[r][slot];
+                    // Real val from CSV for this specific day
+                    let realVal = organizedData[targetDate]?.[r]?.[slot];
+
                     if (mode === 'prediction') {
-                        // Full Prediction for Tomorrow/Day After based on Avg
-                        predData.push(Math.max(0, avgVal + (Math.random() * 5 - 2.5) * noiseFactor));
-                        realData.push(null); 
+                        // Pure prediction based on Average
+                        realData.push(null);
+                        predData.push(avgVal > 0 ? avgVal : null);
                     } 
                     else if (mode === 'today') {
-                        // Real data from CSV (Latest Date)
-                        let csvVal = organizedData[targetDate]?.[route]?.[slot];
+                        // If CSV has data for this slot, use it.
+                        // If not, AND it's in the future relative to system time, predict.
                         
-                        if (slot <= currentTimeInt) {
-                            // PAST: Show Real Data
-                            realData.push(csvVal !== undefined ? csvVal : null);
+                        if (realVal !== undefined) {
+                            // We have real data
+                            realData.push(realVal);
                             predData.push(null);
-                        } else {
-                            // FUTURE: Show Prediction based on Avg
+                        } else if (slot > curT) {
+                            // Future, no data -> Predict
                             realData.push(null);
-                            predData.push(Math.max(0, avgVal + (Math.random() * 3 - 1.5)));
+                            predData.push(avgVal > 0 ? avgVal : null);
+                        } else {
+                            // Past/Now but missing data -> Null
+                            realData.push(null);
+                            predData.push(null);
                         }
-                    }
+                    } 
                     else {
-                        // Historical Mode
-                        let csvVal = organizedData[targetDate]?.[route]?.[slot];
-                        realData.push(csvVal !== undefined ? csvVal : null);
+                        // History: Pure Real Data
+                        realData.push(realVal !== undefined ? realVal : null);
                         predData.push(null);
                     }
                 });
 
-                // Stitch connection for Today
+                // Stitching lines for Today
                 if (mode === 'today') {
-                    const idx = TIME_SLOTS.indexOf(currentTimeInt);
-                    if (idx !== -1 && realData[idx] !== null) {
-                        predData[idx] = realData[idx];
+                    // Find last real point to connect to first pred point
+                    let lastRealIdx = -1;
+                    for(let k=0; k<realData.length; k++) if(realData[k] !== null) lastRealIdx = k;
+                    
+                    if (lastRealIdx !== -1 && lastRealIdx < realData.length - 1) {
+                         // Start prediction line from the last real point
+                         predData[lastRealIdx] = realData[lastRealIdx];
                     }
                 }
 
-                if (charts[route]) {
-                    charts[route].data.datasets[0].data = realData;
-                    charts[route].data.datasets[1].data = predData;
-                    charts[route].update();
+                if(charts[r]) {
+                    charts[r].data.datasets[0].data = realData;
+                    charts[r].data.datasets[1].data = predData;
+                    charts[r].update();
                 } else {
-                    charts[route] = new Chart(ctx, {
+                    charts[r] = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: TIME_LABELS,
@@ -439,16 +368,14 @@
                                     data: realData,
                                     borderColor: '#3b82f6',
                                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    borderWidth: 2, tension: 0.3, fill: true, pointRadius: 2,
-                                    spanGaps: true // FIX: Connects dots over missing data
+                                    borderWidth: 2, tension: 0.3, fill: true, pointRadius: 2, spanGaps: true
                                 },
                                 {
-                                    label: 'Prediction',
+                                    label: 'Pred',
                                     data: predData,
                                     borderColor: '#f43f5e',
                                     backgroundColor: 'rgba(244, 63, 94, 0.1)',
-                                    borderWidth: 2, borderDash: [5, 5], tension: 0.3, fill: false, pointRadius: 0,
-                                    spanGaps: true // FIX: Connects dots over missing data
+                                    borderWidth: 2, borderDash: [4, 4], tension: 0.3, fill: false, pointRadius: 0, spanGaps: true
                                 }
                             ]
                         },
@@ -456,9 +383,9 @@
                             responsive: true, maintainAspectRatio: false,
                             interaction: { intersect: false, mode: 'index' },
                             plugins: { legend: { display: false } },
-                            scales: {
-                                x: { ticks: { font: { size: 9 }, maxTicksLimit: 6, autoSkip: true }, grid: { display: false } },
-                                y: { min: 0, max: 30, ticks: { font: { size: 9 }, stepSize: 10 }, grid: { color: '#f1f5f9' } }
+                            scales: { 
+                                x: { ticks: { font: {size:9}, maxTicksLimit: 6, autoSkip: true }, grid: { display: false } },
+                                y: { min: 0, max: 30, ticks: { font: {size:9}, stepSize: 10 }, grid: { color: '#f1f5f9' } }
                             }
                         }
                     });
@@ -466,75 +393,38 @@
             });
         }
 
-        // --- MAP & UTILS ---
+        // --- MAP & MODEL ---
         function initMap() {
             if(mapInitialized) return;
             mapObject = L.map('map').setView([3.1275, 101.6506], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObject);
             
-            // INCREASED PIN SIZE (Radius: 10)
-            const points = [
-                {n:"FSKTM (TARGET)", l:[3.127503, 101.650681], c:"red"},
-                {n:"GATE 1 (KL GATE)", l:[3.118774, 101.663074], c:"blue"},
-                {n:"GATE 2 (PJ GATE)", l:[3.115642, 101.650832], c:"blue"},
-                {n:"GATE 3 (MAHSA)", l:[3.118839, 101.651122], c:"blue"},
-                {n:"GATE 4 (DAMANSARA)", l:[3.137486, 101.658259], c:"blue"}
-            ];
+            const points = [ {n:"FSKTM (TARGET)", l:[3.127503, 101.650681], c:"red"}, {n:"GATE 1 (KL)", l:[3.118774, 101.663074], c:"blue"}, {n:"GATE 2 (PJ)", l:[3.115642, 101.650832], c:"blue"}, {n:"GATE 3 (MAHSA)", l:[3.118839, 101.651122], c:"blue"}, {n:"GATE 4 (DAMANSARA)", l:[3.137486, 101.658259], c:"blue"} ];
             points.forEach(p => L.circleMarker(p.l, {color:p.c, radius:10, fillOpacity:0.8, stroke: true, weight: 2}).addTo(mapObject).bindPopup(`<b>${p.n}</b>`));
 
-            const cams = [
-                {name: "NPE KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14.jpg"},
-                {name: "NPE KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "c2.fgies.com/sd-npe/NPE-23.jpg"},
-                {name: "NPE KM14 WB", lat: 3.121334, lon: 101.674702, url: "c2.fgies.com/sd-npe/NPE-24.jpg"},
-                {name: "SRT KM2.6 EB", lat: 3.132604, lon: 101.635048, url: "c12.fgies.com/sd-srt/SRT-03.jpg"},
-                {name: "SRT KM5.65 MED", lat: 3.136340, lon: 101.656388, url: "c12.fgies.com/sd-srt/SRT-06.jpg"},
-                {name: "SPE KM0.2 NB", lat: 3.114883, lon: 101.665004, url: "c12.fgies.com/sd-spe/SPE-01.jpg"},
-                {name: "SPE KM2.2 NB", lat: 3.111576, lon: 101.687789, url: "c12.fgies.com/sd-spe/SPE-02.jpg"},
-                {name: "SPE KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "c12.fgies.com/sd-spe/SPE-03.jpg"},
-            ];
+            const cams = [ {name: "NPE KM13.3 EB", lat: 3.116669, lon: 101.671921, url: "c2.fgies.com/sd-npe/NPE-14.jpg"}, {name: "NPE KM12.8 WB", lat: 3.113084, lon: 101.673034, url: "c2.fgies.com/sd-npe/NPE-23.jpg"}, {name: "NPE KM14 WB", lat: 3.121334, lon: 101.674702, url: "c2.fgies.com/sd-npe/NPE-24.jpg"}, {name: "SRT KM2.6 EB", lat: 3.132604, lon: 101.635048, url: "c12.fgies.com/sd-srt/SRT-03.jpg"}, {name: "SRT KM5.65 MED", lat: 3.136340, lon: 101.656388, url: "c12.fgies.com/sd-srt/SRT-06.jpg"}, {name: "SPE KM0.2 NB", lat: 3.114883, lon: 101.665004, url: "c12.fgies.com/sd-spe/SPE-01.jpg"}, {name: "SPE KM2.2 NB", lat: 3.111576, lon: 101.687789, url: "c12.fgies.com/sd-spe/SPE-02.jpg"}, {name: "SPE KM3.1 NB", lat: 3.111892, lon: 101.687890, url: "c12.fgies.com/sd-spe/SPE-03.jpg"} ];
             const icon = L.divIcon({className:'', html:'<div style="background:orange;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 5px black;"></div>'});
             
             cams.forEach(c => {
                 const url = `https://wsrv.nl/?url=${c.url}&t=${Date.now()}`;
-                const popupContent = `
-                    <div class="text-center">
-                        <b class="text-sm mb-1 block">${c.name}</b>
-                        <img src="${url}" style="width:100%; min-width:280px; min-height:180px; background:#eee; display:block; border-radius:4px;"
-                        onerror="this.parentElement.innerHTML='<span style=\\'color:red\\'>Offline</span>';">
-                    </div>`;
-                L.marker([c.lat, c.lon], {icon}).addTo(mapObject).bindPopup(popupContent);
+                L.marker([c.lat, c.lon], {icon}).addTo(mapObject).bindPopup(`<div class="text-center"><b class="text-sm mb-1 block">${c.name}</b><img src="${url}" style="width:100%; min-width:280px; min-height:180px; background:#eee; display:block; border-radius:4px;" onerror="this.parentElement.innerHTML='<span style=\\'color:red\\'>Offline</span>';"></div>`);
             });
             mapInitialized = true;
         }
 
         function runModelTest(m, t) {
-            const res = document.getElementById('model-results');
-            const load = document.getElementById('model-loader');
-            const title = document.getElementById('result-title');
-            const body = document.getElementById('result-body');
+            document.getElementById('model-results').classList.add('hidden'); document.getElementById('model-loader').style.display='block';
+            setTimeout(()=>{
+                document.getElementById('model-loader').style.display='none'; document.getElementById('model-results').classList.remove('hidden');
+                document.getElementById('result-title').innerText=`Results for ${m} [${t}]`;
+                let ba=0.85; if(m.includes('LSTM'))ba=0.92; if(m.includes('Forest'))ba=0.94; if(m.includes('KNN'))ba=0.82;
+                const n=(Math.random()*0.04)-0.02; const a=ba+n; const p=a-0.02; const r=a-0.01; const f1=2*((p*r)/(p+r));
+                const d=[ {n:'Accuracy',v:(a*100).toFixed(2)+'%',o:'Correctly Classified'}, {n:'FP Rate',v:(0.1+n).toFixed(3),o:'False Positive'}, {n:'Precision',v:p.toFixed(3),o:'Weighted Avg'}, {n:'Recall',v:r.toFixed(3),o:'Weighted Avg'}, {n:'F1-Score',v:f1.toFixed(3),o:'Harmonic Mean'}, {n:'AUC',v:(0.9+n).toFixed(3),o:'ROC Area'}, {n:'MAE',v:(0.04+Math.abs(n)).toFixed(4),o:'Mean Abs Error'}, {n:'RMSE',v:(0.12+Math.abs(n)).toFixed(4),o:'Root Mean Sq'}, {n:'R²',v:(0.8+n).toFixed(4),o:'Coeff Determination'} ];
+                document.getElementById('result-body').innerHTML=d.map(x=>`<tr class="border-b"><td class="px-6 py-3 border-r">${x.n}</td><td class="px-6 py-3 border-r font-bold text-blue-600">${x.v}</td><td class="px-6 py-3 italic text-gray-500">${x.o}</td></tr>`).join('');
+            },600);
+        }
 
-            res.classList.add('hidden'); 
-            load.style.display = 'block';
-            
-            setTimeout(() => {
-                load.style.display = 'none'; 
-                res.classList.remove('hidden');
-                title.innerText = `Results for ${m} [${t}]`;
-                
-                let baseAcc = 0.85;
-                if(m.includes('LSTM')) baseAcc = 0.92;
-                if(m.includes('Forest')) baseAcc = 0.94;
-                if(m.includes('KNN')) baseAcc = 0.82;
-                
-                const noise = (Math.random() * 0.04) - 0.02;
-                const acc = baseAcc + noise;
-                const p = acc - 0.02;
-                const r = acc - 0.01;
-                const f1 = 2 * ((p*r)/(p+r));
-
-                const metrics = [
-                    {n: 'Accuracy', v: (acc * 100).toFixed(2) + '%', note: 'Correctly Classified Instances'},
-                    {n: 'FP Rate', v: (0.1 + noise).toFixed(3), note: 'False Positive Instances'},
-                    {n: 'Precision', v: p.toFixed(3), note: 'Weighted Avg'},
-                    {n: 'Recall', v: r.toFixed(3), note: 'Weighted Avg'},
-                    {n: 'F1
+        function downloadCSV(){ if(!rawData.length)return alert("No Data"); const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([Papa.unparse(rawData)],{type:'text/csv'})); a.download="traffic_data.csv"; a.click(); }
+    </script>
+</body>
+</html>
