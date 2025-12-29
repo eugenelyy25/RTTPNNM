@@ -1,22 +1,23 @@
 PUBLIC HOLIDAY:
-01.01.25 : New Year's Day
-29.01.25, 30.01.25 : Chinese New Year : FESTIVE
-01.02.25 : Federal Territory Day
-11.02.25 : Thaipusam
-18.03.25 : Nuzul Al-Quran
-31.03.25, 01.04.25 : Hari Raya Aidilfitri : FESTIVE
-01.05.25 : Labour Day
-12.05.25 : Wesak Day
-02.06.25 : Agong's Birthday
-07.06.25 : Hari Raya Haji
-27.06.25 : Awal Muharram
-31.08.25 : Merdeka Day
-05.09.25 : Prophet Muhammad's Birthday
-16.09.25 : Malaysia Day
-20.10.25 : Deepavali : FESTIVE
-25.12.25 : Christmas Day : FESTIVE
+01.01.26 : New Year's Day
+17.02.26, 18.02.26 : Chinese New Year : FESTIVE
+02.02.26 : Federal Territory Day
+01.02.26 : Thaipusam
+08.03.26 : Nuzul Al-Quran
+23.03.26, 24.03.26 : Hari Raya Aidilfitri : FESTIVE
+01.05.26 : Labour Day
+31.05.26 : Wesak Day
+01.06.26 : Agong's Birthday
+27.05.26 : Hari Raya Haji
+17.06.26 : Awal Muharram
+31.08.26 : Merdeka Day
+25.08.26 : Prophet Muhammad's Birthday
+16.09.26 : Malaysia Day
+08.11.26 : Deepavali : FESTIVE
+25.12.26 : Christmas Day : FESTIVE
 
 SCHOOL HOLIDAY:
-29.05.25 - 09.06.25 : Term 1 Holidays
-13.09.25 - 21.09.25 : Term 2 Holidays: September 13 (Sat) – September 21 (Sun)
-20.12.25 - 11.01.26 : End of Year Holidays
+20.03.26 - 28.03.26 : Term 1 Holidays
+22.05.26 - 06.06.26 : Mid Year Holidays
+28.08.26 - 05.09.26 : Term 2 Holidays
+04.12.26 - 31.12.26 : End of Year Holidays
