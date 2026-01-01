@@ -17,7 +17,7 @@ if not GMAPS_KEY:
 # 2. Camera Configuration
 CAMERA_MAP = {
     'NPE (E10) CAM 23 BRIDGE 19 KM12.8 WB': {
-        'url': 'https://c2.fgies.com//sd-npe/NPE-23.jpg?',
+        'url': 'https://c10.fgies.com//sd-npe/NPE-23.jpg?',
         'ref': 'NPE-23-CAPTUREWITHINGREENLINE.jpg'
     },
     'SRT (E23) CAM 03 SEK17 KM2.6 EB': {
