@@ -17,4 +17,4 @@ Below is the visual storyboard for the project presentation.
 ### 2. Demo Video
 Watch the project demonstration & presentation on YouTube.
 
-[![Watch the Demo](https://img.youtube.com/vi/APvxhSL_--w/hqdefault.jpg)](https://www.youtube.com/watch?v=APvxhSL_--w)
+[![Watch the Demo](https://img.youtube.com/vi/34ZXY0vubd8/hqdefault.jpg)](https://youtu.be/34ZXY0vubd8)
