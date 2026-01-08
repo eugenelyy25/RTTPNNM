@@ -18,3 +18,9 @@ Below is the visual storyboard for the project presentation.
 Watch the project demonstration & presentation on YouTube.
 
 [![Watch the Demo](https://img.youtube.com/vi/34ZXY0vubd8/hqdefault.jpg)](https://youtu.be/34ZXY0vubd8)
+
+---
+
+### 3. Traffic Prediction Dashboard
+**Deployment (GitHub Pages):** [View Dashboard](https://eugenelyy25.github.io/RTTPNNM/)
+
